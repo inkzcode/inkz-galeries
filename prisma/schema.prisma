@@ -1,0 +1,320 @@
+// Schéma de données — voir PROJECT_CONTEXT.md pour le contexte produit.
+//
+// Principe : tout ce qui touche aux fichiers (RAW, previews, finaux) est
+// stocké comme une simple *clé* d'objet (`*Key`) pointant vers Cloudflare
+// R2 — jamais de binaire ici. `originalKey` ne doit jamais être exposé à
+// une route publique ou client.
+//
+// Ce schéma prépare volontairement des tables pour des fonctionnalités
+// décrites dans le brief mais pas encore construites (paiement, messages
+// de confiance, avant/après, notifications) afin de ne pas avoir à le
+// redessiner à chaque nouveau jalon. Une table présente ici ne signifie
+// pas que la fonctionnalité est active.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------
+// Admin (moi uniquement — strictement séparé de l'accès client)
+// ---------------------------------------------------------------------
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------
+// Galerie / shooting — l'entité centrale. La quasi-totalité des champs
+// est facultative : une galerie doit pouvoir être créée en quelques
+// secondes, puis enrichie progressivement.
+// ---------------------------------------------------------------------
+
+enum GalleryStatus {
+  DRAFT // Brouillon
+  AWAITING_SELECTION // En attente de sélection
+  SELECTION_RECEIVED // Sélection reçue
+  PAYMENT_PENDING // Paiement en attente
+  TO_RETOUCH // À retoucher
+  IN_POST_PRODUCTION // Post-production en cours
+  READY_TO_DELIVER // Prêt à livrer
+  DELIVERED // Livré
+  ARCHIVED // Archivé
+}
+
+enum WatermarkLevel {
+  NONE
+  LIGHT
+  STANDARD
+  STRONG
+}
+
+// Modèle tarifaire — centralisé mais extensible : ajouter un mode ne
+// nécessite qu'une valeur d'enum + la logique correspondante dans
+// lib/domain/pricing.ts, pas une refonte du schéma.
+enum PricingMode {
+  DISABLED // Pas de paiement du tout
+  FREE // Shooting entièrement gratuit
+  INCLUDED_PLUS_EXTRA // X photos incluses, prix au-delà
+  PER_PHOTO // Aucune photo incluse, prix par photo
+}
+
+model Gallery {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  clientName  String?
+  clientEmail String?
+  description String?
+  shootingType String? // libre pour l'instant (portrait, événement, culinaire...)
+  shootingDate DateTime?
+
+  status GalleryStatus @default(DRAFT)
+
+  coverPhotoId String? @unique
+  coverPhoto   Photo?  @relation("GalleryCover", fields: [coverPhotoId], references: [id])
+
+  // Protection des previews
+  watermarkLevel WatermarkLevel @default(NONE)
+
+  // Tarification — voir lib/domain/pricing.ts pour le calcul
+  pricingMode          PricingMode @default(DISABLED)
+  includedPhotosCount  Int?
+  extraPhotoPriceCents Int?
+  currency             String      @default("EUR")
+
+  // Fonctionnalités optionnelles, activables par galerie
+  retouchPhilosophyEnabled Boolean @default(false)
+  selfImageMessagesEnabled Boolean @default(false)
+  beforeAfterEnabled       Boolean @default(false)
+
+  // Sélection
+  selectionLockedAt DateTime? // verrouillée après confirmation/paiement ; déverrouillable manuellement en admin
+
+  // Archivage — jamais de suppression automatique, seulement des jalons
+  // informatifs consultés depuis le dashboard admin.
+  deletionWarningAt DateTime?
+  archivedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos          Photo[]           @relation("GalleryPhotos")
+  accessCodes     AccessCode[]
+  payments        Payment[]
+  statusHistory   StatusHistory[]
+  beforeAfterSet  BeforeAfterExample[]
+  notifications   NotificationLog[]
+}
+
+// ---------------------------------------------------------------------
+// Photos
+// ---------------------------------------------------------------------
+
+model Photo {
+  id       String  @id @default(cuid())
+  galleryId String
+  gallery   Gallery @relation("GalleryPhotos", fields: [galleryId], references: [id], onDelete: Cascade)
+
+  filename String // nom de fichier d'origine, ex. DSC_4821.CR3 (utile pour l'export Lightroom)
+
+  // Stockage — jamais de binaire ici, uniquement des clés d'objet R2.
+  originalKey String // PRIVÉ — jamais exposé au client
+  previewKey  String? // preview web générée (watermark éventuel intégré aux pixels)
+  finalKey    String? // fichier final post-production, livré au client
+
+  width  Int?
+  height Int?
+
+  sortOrder Int @default(0)
+
+  finalReadyAt DateTime? // renseigné quand le fichier final est importé
+
+  createdAt DateTime @default(now())
+
+  coverOfGallery Gallery? @relation("GalleryCover")
+
+  selection SelectionItem?
+  notes     PhotoNote[]
+
+  @@index([galleryId])
+}
+
+// Représente le fait qu'une photo fait partie de la sélection du client.
+// Relation 1:1 avec Photo (une photo est sélectionnée ou non) plutôt qu'une
+// simple table de jointure, pour pouvoir y accrocher des métadonnées.
+model SelectionItem {
+  id      String @id @default(cuid())
+  photoId String @unique
+  photo   Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+enum AnnotationAuthor {
+  CLIENT
+  ADMIN
+}
+
+// Demande de retouche / annotation — une COUCHE séparée, ne modifie
+// jamais le fichier photographique lui-même.
+model PhotoNote {
+  id      String @id @default(cuid())
+  photoId String
+  photo   Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  author  AnnotationAuthor
+  message String
+
+  // Position optionnelle sur l'image (0..1), pour une future annotation
+  // dessinée. Nulle pour un simple commentaire général.
+  positionX Float?
+  positionY Float?
+
+  resolved Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([photoId])
+}
+
+// ---------------------------------------------------------------------
+// Accès client (sans compte) — code/PIN par galerie. La structure
+// permet d'ajouter plus tard des liens directs signés sans migration
+// majeure (un AccessCode peut aussi porter un token à usage de lien).
+// ---------------------------------------------------------------------
+
+model AccessCode {
+  id        String  @id @default(cuid())
+  galleryId String
+  gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  codeHash String // le PIN n'est jamais stocké en clair
+
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([galleryId])
+}
+
+// ---------------------------------------------------------------------
+// Paiement — architecture prête pour Stripe, rien de connecté pour
+// l'instant. `provider`/`providerPaymentId` permettent de brancher un
+// prestataire sans changer le schéma.
+// ---------------------------------------------------------------------
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id        String  @id @default(cuid())
+  galleryId String
+  gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  provider          String? // ex. "stripe" — null tant qu'aucun prestataire n'est branché
+  providerPaymentId String?
+
+  amountCents Int
+  currency    String        @default("EUR")
+  status      PaymentStatus @default(PENDING)
+
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  @@index([galleryId])
+}
+
+// ---------------------------------------------------------------------
+// Historique des statuts — traçabilité des transitions (manuelles ou
+// automatiques).
+// ---------------------------------------------------------------------
+
+enum StatusChangedBy {
+  SYSTEM
+  ADMIN
+}
+
+model StatusHistory {
+  id        String  @id @default(cuid())
+  galleryId String
+  gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  fromStatus GalleryStatus?
+  toStatus   GalleryStatus
+  changedBy  StatusChangedBy
+  note       String?
+
+  createdAt DateTime @default(now())
+
+  @@index([galleryId])
+}
+
+// ---------------------------------------------------------------------
+// Contenus éditoriaux optionnels (désactivés par défaut, pas encore
+// utilisés en V1) — préparés pour ne pas redessiner le schéma plus tard.
+// ---------------------------------------------------------------------
+
+// Bibliothèque de messages autour de l'image de soi (~20 à terme).
+// Globale (pas liée à une galerie précise) ; l'activation se fait via
+// Gallery.selfImageMessagesEnabled. Contenu à rédiger séparément.
+model TrustMessage {
+  id     String  @id @default(cuid())
+  theme  String // ex. "confiance", "lumière", "post-production"...
+  body   String
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}
+
+model BeforeAfterExample {
+  id        String   @id @default(cuid())
+  galleryId String?
+  gallery   Gallery? @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  beforeKey String
+  afterKey  String
+  caption   String?
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([galleryId])
+}
+
+enum NotificationType {
+  GALLERY_READY
+  SELECTION_CONFIRMED
+  PAYMENT_RECEIVED
+  FINAL_READY
+}
+
+// Aucun fournisseur d'envoi n'est branché en V1 — cette table permet de
+// préparer le suivi sans dépendre d'un service payant dès le départ.
+model NotificationLog {
+  id        String  @id @default(cuid())
+  galleryId String
+  gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  type           NotificationType
+  recipientEmail String
+  sentAt         DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([galleryId])
+}

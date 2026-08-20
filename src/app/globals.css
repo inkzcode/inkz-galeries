@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — direction temporaire (voir PROJECT_CONTEXT.md, section
+ * "Direction artistique").
+ *
+ * Principe : minimaliste, éditoriale, photographique. Palette neutre
+ * (noir / blanc / gris), beaucoup d'espace, les photographies au premier
+ * plan. Aucune couleur de marque définitive n'est utilisée ici — tout est
+ * centralisé dans ce fichier pour pouvoir être remplacé plus tard par la
+ * véritable identité visuelle d'Inkz sans toucher aux composants.
+ */
+:root {
+  /* Neutres — rampe de gris utilisée pour à peu près tout */
+  --color-paper: #ffffff;
+  --color-ink: #141414;
+  --color-ink-soft: #333333;
+  --color-muted: #6b6b6b;
+  --color-faint: #9a9a9a;
+  --color-surface: #f6f6f5;
+  --color-border: #e4e4e2;
+
+  /* Couleurs fonctionnelles (pas des couleurs de marque) */
+  --color-success: #2f6b3c;
+  --color-danger: #a3342c;
+  --color-warning: #8a6a1f;
+
+  /* Alias sémantiques utilisés par Tailwind (@theme ci-dessous) */
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+
+  /* Typographie — placeholders neutres, faciles à remplacer.
+     Piles système par défaut (aucune dépendance réseau en V1). Pour
+     brancher une vraie police plus tard, redéfinir --font-sans-app /
+     --font-serif-app (voir src/app/layout.tsx) : rien d'autre à changer. */
+  --font-sans-fallback:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif-fallback: ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans-app: var(--font-sans-fallback);
+  --font-serif-app: var(--font-serif-fallback);
+
+  /* Rayons — discrets, pas de style "bulle" */
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+
+  /* Espacement éditorial — généreux par défaut */
+  --space-section: clamp(3rem, 6vw, 7rem);
+  --space-gutter: clamp(1rem, 3vw, 2.5rem);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-paper: var(--color-paper);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-muted: var(--color-muted);
+  --color-faint: var(--color-faint);
+  --color-surface: var(--color-surface);
+  --color-border: var(--color-border);
+  --color-success: var(--color-success);
+  --color-danger: var(--color-danger);
+  --color-warning: var(--color-warning);
+
+  --font-sans: var(--font-sans-app);
+  --font-serif: var(--font-serif-app);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}

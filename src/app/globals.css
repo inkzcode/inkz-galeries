@@ -1,14 +1,17 @@
 @import "tailwindcss";
 
 /*
- * Design tokens — direction temporaire (voir PROJECT_CONTEXT.md, section
- * "Direction artistique").
+ * Design tokens (voir PROJECT_CONTEXT.md, section "Direction artistique").
  *
- * Principe : minimaliste, éditoriale, photographique. Palette neutre
- * (noir / blanc / gris), beaucoup d'espace, les photographies au premier
- * plan. Aucune couleur de marque définitive n'est utilisée ici — tout est
- * centralisé dans ce fichier pour pouvoir être remplacé plus tard par la
- * véritable identité visuelle d'Inkz sans toucher aux composants.
+ * Direction (révisée le 2026-08-21, voir §6dixies) : éditoriale et
+ * photographique, mais vivante — pas minimaliste-neutre par défaut. Base
+ * neutre + la vraie palette de marque (rouge/or Inkz) utilisée avec une
+ * vraie présence, pas cantonnée à un seul bouton. Micro-interactions
+ * simples au survol plutôt qu'une chorégraphie d'animations façon site
+ * vitrine — les photographies du client restent la priorité visuelle sur
+ * les écrans de galerie (voir gallery-view.tsx, volontairement plus calme).
+ * Tout est centralisé ici pour rester ajustable sans toucher aux
+ * composants.
  */
 :root {
   /* Neutres — rampe de gris utilisée pour à peu près tout */
@@ -25,28 +28,49 @@
   --color-danger: #a3342c;
   --color-warning: #8a6a1f;
 
+  /* Identité de marque Inkz — reçue le 2026-08-21 (logo + palette fournis
+     par Enzo). Valeurs estimées visuellement depuis l'image partagée, PAS
+     encore confirmées avec des codes hex exacts ni un fichier de marque —
+     voir memory "inkz-brand-identity". À ajuster dès que confirmé, sans
+     avoir à toucher aux composants (ils consomment --color-accent). */
+  --color-brand-red: #b3413e;
+  --color-brand-gold: #f0dd95;
+  --color-accent: var(--color-brand-red);
+  --color-accent-soft: var(--color-brand-gold);
+  /* Version tamisée de l'or pour des fonds (badges, surbrillances) — assez
+     pâle pour rester lisible avec du texte foncé dessus. */
+  --color-accent-tint: color-mix(in srgb, var(--color-brand-gold) 35%, var(--color-paper));
+
   /* Alias sémantiques utilisés par Tailwind (@theme ci-dessous) */
   --background: var(--color-paper);
   --foreground: var(--color-ink);
 
-  /* Typographie — placeholders neutres, faciles à remplacer.
-     Piles système par défaut (aucune dépendance réseau en V1). Pour
-     brancher une vraie police plus tard, redéfinir --font-sans-app /
-     --font-serif-app (voir src/app/layout.tsx) : rien d'autre à changer. */
+  /* Typographie — voir src/app/layout.tsx (next/font/google, Bricolage
+     Grotesque + Plus Jakarta Sans). Ce fichier ne fait plus que consommer
+     les variables `--font-serif-app`/`--font-sans-app` que Next injecte
+     sur <html> ; ne pas les redéfinir ici (conflit de cascade avec
+     next/font). Piles de secours seulement, utilisées si les polices
+     n'ont pas encore chargé. */
   --font-sans-fallback:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-serif-fallback: ui-serif, Georgia, "Times New Roman", serif;
-  --font-sans-app: var(--font-sans-fallback);
-  --font-serif-app: var(--font-serif-fallback);
 
-  /* Rayons — discrets, pas de style "bulle" */
-  --radius-sm: 2px;
-  --radius-md: 6px;
-  --radius-lg: 12px;
+  /* Rayons — un peu plus ronds qu'avant pour faire écho aux formes
+     bulbeuses du logo, sans tomber dans le style "bulle". */
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 20px;
 
   /* Espacement éditorial — généreux par défaut */
   --space-section: clamp(3rem, 6vw, 7rem);
   --space-gutter: clamp(1rem, 3vw, 2.5rem);
+
+  /* Motion — durées/courbes partagées pour des micro-interactions
+     cohérentes (survol, apparition). Volontairement simples : pas de
+     librairie d'animation, juste des transitions CSS soignées. */
+  --ease-standard: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
 }
 
 @theme inline {
@@ -62,9 +86,12 @@
   --color-success: var(--color-success);
   --color-danger: var(--color-danger);
   --color-warning: var(--color-warning);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-accent-tint: var(--color-accent-tint);
 
-  --font-sans: var(--font-sans-app);
-  --font-serif: var(--font-serif-app);
+  --font-sans: var(--font-sans-app), var(--font-sans-fallback);
+  --font-serif: var(--font-serif-app), var(--font-serif-fallback);
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -75,4 +102,46 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* Micro-interactions par défaut — tout élément interactif répond au
+   survol avec une transition douce plutôt qu'un changement brutal. Les
+   composants peuvent surcharger ces propriétés au cas par cas. */
+a,
+button {
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+/* Entrée douce pour le contenu de la page d'accueil publique — pas de
+   librairie d'animation, un simple fondu + léger déplacement, décalé par
+   élément via --delay inline. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up var(--duration-base) var(--ease-standard) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a,
+  button,
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

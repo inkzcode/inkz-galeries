@@ -27,6 +27,33 @@ npm run db:migrate    # applique le schéma (dev)
 npm run db:studio     # explorateur de données
 ```
 
+## Compte admin
+
+Il n'y a pas de formulaire d'inscription : un seul compte photographe,
+provisionné via un script (voir `prisma/seed-admin.ts`) :
+
+```bash
+ADMIN_EMAIL="vous@example.com" ADMIN_PASSWORD="un-mot-de-passe-solide" npm run db:seed-admin
+```
+
+## Stockage des photos
+
+Sans les variables `R2_*` dans `.env.local`, le stockage bascule
+automatiquement sur un adapter de dev qui écrit sur le disque local
+(`.local-storage/` pour les originaux, `public/dev-previews/` pour les
+previews) — permet de tester tout le pipeline d'import/preview/watermark
+sans compte Cloudflare. Voir `src/lib/storage/README.md`.
+
+## Tests
+
+```bash
+npm run test         # une passe
+npm run test:watch   # mode watch
+```
+
+Couvre `lib/domain`, `lib/storage` et `lib/imaging` (logique pure et
+traitement d'image — pas de dépendance à une base de données réelle).
+
 ## Stack
 
 Next.js 16 (App Router) + TypeScript, Tailwind CSS v4, Prisma / PostgreSQL

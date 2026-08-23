@@ -37,6 +37,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# stockage local de dev (voir src/lib/storage/local-adapter.ts) — jamais
+# committé, y compris les previews : ce sont des fichiers, pas du code.
+/.local-storage/
+/public/dev-previews/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -1,19 +1,31 @@
-export default function AdminHome() {
+import Link from "next/link";
+import { verifySession } from "@/lib/auth/dal";
+import { listGalleries } from "@/lib/services/gallery-service";
+import { GalleryList } from "./gallery-list";
+
+export default async function AdminDashboard() {
+  await verifySession();
+  const galleries = await listGalleries();
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center gap-4 px-6 py-24">
-      <p className="text-sm tracking-wide text-muted uppercase">
-        Espace photographe
-      </p>
-      <h1 className="font-serif text-3xl text-ink">
-        L&apos;administration arrive au prochain jalon.
-      </h1>
-      <p className="text-ink-soft">
-        Cette section sera protégée par une authentification dédiée (email +
-        mot de passe, session sécurisée) — voir PROJECT_CONTEXT.md pour le
-        détail de l&apos;architecture prévue. Aucune route de{" "}
-        <code>/admin</code> n&apos;est accessible sans être connecté une fois
-        l&apos;authentification en place.
-      </p>
+    <main className="mx-auto max-w-5xl px-6 py-12">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-serif text-3xl text-ink">Shootings</h1>
+        <Link
+          href="/admin/galleries/new"
+          className="inline-flex items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-paper shadow-sm hover:-translate-y-0.5 hover:shadow-md"
+        >
+          Nouveau shooting
+        </Link>
+      </div>
+
+      {galleries.length === 0 ? (
+        <p className="mt-16 text-ink-soft">
+          Aucun shooting pour l&apos;instant. Créez-en un pour commencer.
+        </p>
+      ) : (
+        <GalleryList galleries={galleries} />
+      )}
     </main>
   );
 }

@@ -15,9 +15,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Prisma 7 : l'URL de connexion ne se déclare plus ici mais dans
+// `prisma.config.ts` (CLI) et via un adapter passé à `PrismaClient` au
+// runtime (voir `src/lib/db.ts`). Voir PROJECT_CONTEXT.md §4bis.
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ---------------------------------------------------------------------
@@ -175,10 +177,19 @@ model PhotoNote {
   author  AnnotationAuthor
   message String
 
-  // Position optionnelle sur l'image (0..1), pour une future annotation
-  // dessinée. Nulle pour un simple commentaire général.
+  // Position ponctuelle (0..1) — ancien format "un point", conservé pour
+  // les remarques déjà en base. Les nouvelles remarques utilisent
+  // `drawingPath` (tracé libre) à la place.
   positionX Float?
   positionY Float?
+
+  // Tracé libre dessiné sur l'image (2026-08-22, retour d'Enzo : "renforce
+  // le côté dessin où on peut vrm dessiner et entourer le problème").
+  // Tableau de points {x,y} en coordonnées relatives 0..1 (comme
+  // positionX/Y), stocké tel quel — jamais interprété/exécuté, uniquement
+  // redessiné en SVG. Un commentaire = un tracé = une couleur (`color`).
+  drawingPath Json?
+  color       String? // hex, ex. "#e63946" — assignée côté client depuis une palette fixe, cycle par photo
 
   resolved Boolean @default(false)
 
@@ -198,7 +209,7 @@ model AccessCode {
   galleryId String
   gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
 
-  codeHash String // le PIN n'est jamais stocké en clair
+  codeHash String @unique // le PIN n'est jamais stocké en clair — hash déterministe (HMAC), recherche directe par PIN seul sur /g
 
   expiresAt  DateTime?
   lastUsedAt DateTime?

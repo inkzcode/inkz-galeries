@@ -1,6 +1,7 @@
 # `lib/storage`
 
-Tout ce qui parle au stockage objet (Cloudflare R2, compatible S3).
+Tout ce qui parle au stockage objet (compatible S3 — Backblaze B2 par
+défaut, voir `s3-adapter.ts` pour pourquoi).
 
 Deux préfixes/buckets strictement séparés, dès la conception :
 
@@ -28,15 +29,17 @@ Fichiers existants (Milestone 2) :
   zéro coût, aucun compte externe requis. Écrit sous `.local-storage/`
   (originals, jamais dans `public/`) et `public/dev-previews/` (previews,
   servies statiquement par Next). Les deux dossiers sont gitignored.
-- `r2-adapter.ts` — vrai client S3 pour Cloudflare R2 (`@aws-sdk/client-s3`),
-  URLs de preview signées et temporaires (1h) via
-  `@aws-sdk/s3-request-presigner`. **Pas encore testé contre un vrai
-  compte R2** (aucun compte provisionné dans cet environnement) — écrit
-  structurellement comme `src/lib/db.ts`/Prisma, à vérifier dès qu'un
-  compte existe.
-- `client.ts` — `getStorageAdapter()` choisit automatiquement R2 (si les
-  variables `R2_*` sont présentes) ou le stockage local de dev sinon. Lève
-  une erreur si R2 est absent en production (`NODE_ENV === "production"`).
+- `s3-adapter.ts` — client S3 générique (`@aws-sdk/client-s3`), URLs de
+  preview signées et temporaires (1h) via `@aws-sdk/s3-request-presigner`.
+  Fonctionne avec n'importe quel stockage objet compatible S3 — seuls
+  `STORAGE_ENDPOINT`/`STORAGE_REGION` changent d'un fournisseur à l'autre.
+  Renommé depuis `r2-adapter.ts` le 2026-08-23 : R2 impose une carte
+  bancaire pour s'activer (même sous le palier gratuit) ; Backblaze B2
+  offre le même principe (10 Go gratuits en permanence) sans jamais en
+  demander — voir PROJECT_CONTEXT.md §7.
+- `client.ts` — `getStorageAdapter()` choisit automatiquement ce stockage
+  (si les variables `STORAGE_*` sont présentes) ou le stockage local de dev
+  sinon. Lève une erreur si absent en production (`NODE_ENV === "production"`).
 
 Règle : aucune route publique ne doit jamais retourner un chemin ou une URL
 pointant directement vers `originals/` — et avec `types.ts` tel qu'écrit,

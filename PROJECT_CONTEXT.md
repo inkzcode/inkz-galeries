@@ -1905,6 +1905,48 @@ tests)/`next build` passent tous, relecture attentive du câblage
 flex/hauteurs de `lightbox.tsx`, mais **la mise en page réelle reste à
 confirmer par Enzo en conditions réelles**.
 
+## 6octovicies. Mise en ligne — début, stockage objet changé de R2 à Backblaze B2 (2026-08-23)
+
+Enzo : "je veux maintenant que ça soit dispo sur internet pour que je
+puisse taffer de mon iPad."
+
+**1. Code prêt, rien poussé nulle part encore** — tout le travail
+accumulé depuis les fondations (Milestone 0) était toujours non commité
+(132 fichiers). Commité localement (`git config` local `user.name`/
+`user.email` repris du commit existant, `David <dav.deoliveira@gmail.com>`
+— aucune identité globale modifiée). Toujours aucun remote Git configuré
+— rien n'a quitté la machine.
+
+**2. Cloudflare R2 abandonné pour Backblaze B2** — en suivant le plan de
+mise en ligne, Enzo est tombé sur l'écran Cloudflare demandant une carte
+bancaire pour activer R2, contrairement à ce que documentait ce fichier
+("aucune carte requise"). Vérifié par recherche web : c'est réel et
+documenté (fil de la communauté Cloudflare), pas une erreur de sa part ni
+un mauvais lien — R2 spécifiquement (contrairement au reste de Cloudflare)
+exige une carte à l'activation, même si rien n'est jamais débité sous le
+palier gratuit (10 Go). Enzo ne voulait pas la donner. Backblaze B2
+vérifié comme alternative réelle (10 Go gratuits en permanence, **aucune
+carte demandée**, API compatible S3 comme R2) — choisi à sa place.
+- `src/lib/storage/r2-adapter.ts` → renommé `s3-adapter.ts`
+  (`createS3StorageAdapter`/`S3StorageConfig`) : plus rien de spécifique à
+  R2, juste un client S3 générique paramétré par `endpoint`/`region`
+  (R2 imposait `accountId` → URL `*.r2.cloudflarestorage.com` en dur ;
+  B2 fournit son endpoint/région directement sur la page du bucket créé).
+- Variables d'environnement renommées `R2_*` → `STORAGE_*` (+ nouvelle
+  `STORAGE_REGION`, nécessaire pour B2, R2 se contentait de `"auto"`) —
+  `client.ts`, `.env.example`, `storage/README.md` mis à jour en
+  conséquence. Toujours le même comportement : bascule sur le stockage
+  local de dev si absentes, erreur explicite si absentes en production.
+- **Toujours pas de compte Backblaze créé par Enzo** au moment d'écrire
+  ceci — étape suivante côté Enzo, avant de pouvoir configurer les
+  variables `STORAGE_*` en production.
+
+**3. Toujours en cours** : Enzo doit créer/confirmer ses comptes GitHub et
+Vercel (aucun des deux ne peut être créé à sa place — création de compte).
+Une fois un dépôt GitHub existant communiqué, le code y sera poussé
+(demande de permission explicite avant tout push, comme toute action
+visible/partagée).
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —
@@ -1941,12 +1983,13 @@ ne pas trancher seul :
   export CSV des noms de fichiers sélectionnés (pas d'intégration directe
   avec Lightroom, à vérifier ce qui est réellement possible avant de
   promettre plus).
-- **Hébergement définitif** — Vercel pressenti, pas encore confirmé par le
-  photographe pour la mise en production.
-- **Compte Cloudflare R2** — pas encore créé (voir §6quinquies). Neon est
-  provisionné et fonctionnel depuis le 2026-08-21 ; R2 reste la seule
-  dépendance externe encore manquante avant une mise en production réelle
-  (le stockage local de dev suffit pour continuer à développer/tester).
+- **Hébergement définitif** — Vercel pressenti (mise en ligne en cours,
+  voir §6octovicies), pas encore déployé.
+- **Compte de stockage objet** — Backblaze B2 choisi à la place de
+  Cloudflare R2 le 2026-08-23 (voir §6octovicies) : R2 exige une carte
+  bancaire pour s'activer, ce qu'Enzo ne voulait pas donner. Compte pas
+  encore créé par Enzo au moment d'écrire ceci — Neon, lui, est
+  provisionné et fonctionnel depuis le 2026-08-21.
 
 ## 8. État actuel du projet
 

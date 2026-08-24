@@ -16,6 +16,15 @@ export type StorageAdapter = {
     body: Buffer,
     contentType: string,
   ): Promise<void>;
+  /**
+   * URL signée temporaire pour un dépôt DIRECT depuis le navigateur (PUT),
+   * sans transiter par le serveur Next — indispensable en production
+   * (Vercel plafonne à 4,5 Mo le corps d'une requête vers une fonction,
+   * bien en dessous d'un RAW ou d'un lot de photos ; voir
+   * PROJECT_CONTEXT.md §6novovicies). Distincte de putObject(), qui reste
+   * utilisée pour les écritures faites côté serveur (ex. preview générée).
+   */
+  getUploadUrl(bucket: StorageBucket, key: string, contentType: string): Promise<string>;
   getObjectBuffer(bucket: StorageBucket, key: string): Promise<Buffer>;
   /** URL (signée ou statique selon l'adapter) pour une preview uniquement. */
   getPreviewUrl(key: string): Promise<string>;

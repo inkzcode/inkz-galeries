@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState, useTransition } from "react";
-import { uploadPhotosBatchAction } from "./photos-actions";
+import { useMemo, useRef, useState, useTransition } from "react";
+import { uploadPhotosDirectly } from "./direct-photo-upload";
 import { SinglePhotoUploadForm } from "./single-photo-upload-form";
 
 const DISPLAYABLE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
@@ -18,9 +18,12 @@ function extensionOf(filename: string): string {
 // les RAW ont besoin d'un aperçu à côté, associé automatiquement par nom
 // de fichier (voir lib/domain/filename-match.ts).
 export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
-  const boundAction = uploadPhotosBatchAction.bind(null, galleryId);
-  const [state, formAction, pending] = useActionState(boundAction, undefined);
   const [, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [state, setState] = useState<{ imported: number; unmatched: string[] } | undefined>(
+    undefined,
+  );
 
   const [originals, setOriginals] = useState<File[]>([]);
   const [previews, setPreviews] = useState<File[]>([]);
@@ -44,12 +47,20 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
   }
 
   function handleSubmit() {
-    const data = new FormData();
-    originals.forEach((file) => data.append("originals", file));
-    previews.forEach((file) => data.append("previews", file));
-    startTransition(() => formAction(data));
+    const toUpload = originals;
+    const previewFiles = previews;
     setOriginals([]);
     setPreviews([]);
+    setPending(true);
+    setProgress({ done: 0, total: toUpload.length });
+    startTransition(async () => {
+      const result = await uploadPhotosDirectly(galleryId, toUpload, previewFiles, (done, total) =>
+        setProgress({ done, total }),
+      );
+      setState(result);
+      setPending(false);
+      setProgress(null);
+    });
   }
 
   return (
@@ -158,7 +169,9 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
           className="inline-flex w-fit items-center justify-center rounded-md bg-ink px-5 py-2.5 text-sm font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {pending
-            ? "Import…"
+            ? progress
+              ? `Import… ${progress.done}/${progress.total}`
+              : "Import…"
             : `Importer ${originals.length} photo${originals.length > 1 ? "s" : ""}`}
         </button>
       )}
@@ -174,7 +187,7 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
           {state.unmatched.length > 0 && (
             <div className={state.imported > 0 ? "mt-2" : undefined}>
               <p className="text-danger">
-                Aucun aperçu trouvé pour :
+                Échec (aucun aperçu trouvé, ou envoi impossible) pour :
               </p>
               <ul className="mt-1 list-disc pl-5 text-ink-soft">
                 {state.unmatched.map((name) => (

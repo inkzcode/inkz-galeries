@@ -1,120 +1,112 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { verifySession } from "@/lib/auth/dal";
+import { getStorageAdapter } from "@/lib/storage/client";
+import { buildPhotoObjectKey } from "@/lib/storage/keys";
 import { importPhoto } from "@/lib/services/import-photo";
-import { matchFilename } from "@/lib/domain/filename-match";
 
-export type UploadPhotoState = { error?: string } | undefined;
-
-export async function uploadPhotoAction(
-  galleryId: string,
-  _prevState: UploadPhotoState,
-  formData: FormData,
-): Promise<UploadPhotoState> {
-  await verifySession();
-
-  const originalFile = formData.get("original");
-  const previewSourceFile = formData.get("previewSource");
-
-  if (!(originalFile instanceof File) || originalFile.size === 0) {
-    return { error: "Fichier original manquant." };
-  }
-  if (!(previewSourceFile instanceof File) || previewSourceFile.size === 0) {
-    return { error: "Aperçu JPEG manquant." };
-  }
-
-  const extension = originalFile.name.split(".").pop() || "raw";
-
-  try {
-    await importPhoto({
-      galleryId,
-      filename: originalFile.name,
-      originalBuffer: Buffer.from(await originalFile.arrayBuffer()),
-      originalExtension: extension,
-      originalContentType: originalFile.type || "application/octet-stream",
-      previewSourceBuffer: Buffer.from(await previewSourceFile.arrayBuffer()),
-    });
-  } catch (error) {
-    console.error("Échec de l'import photo :", error);
-    return { error: "L'import a échoué. Réessayer, ou vérifier la configuration du stockage." };
-  }
-
-  revalidatePath(`/admin/galleries/${galleryId}`);
-  return undefined;
-}
-
-// Formats que le navigateur (et sharp) peuvent afficher/traiter tels
-// quels — pas besoin d'un aperçu JPEG exporté séparément pour ceux-là,
-// contrairement à un RAW (brief : aucun décodage RAW côté serveur).
-const DISPLAYABLE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
+// Import de photos originales en dépôt DIRECT vers le stockage (retour
+// d'Enzo, 2026-08-24 : import d'un shooting de 119 photos en échec sur
+// Vercel — voir PROJECT_CONTEXT.md §6novovicies). Vercel plafonne à
+// 4,5 Mo le corps d'une requête vers une fonction serveur ; un RAW
+// dépasse souvent ça à lui seul, et un lot de plusieurs photos toujours.
+// Plus aucun octet de fichier ne transite par le serveur Next à l'envoi :
+// le navigateur envoie directement au stockage via une URL signée
+// (prepare*UploadAction), puis une action légère (finalize*ImportAction)
+// va chercher les octets déjà déposés pour finir le traitement (aperçu +
+// watermark), avec un payload de quelques octets seulement.
 
 function extensionOf(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase();
 }
 
-export type UploadPhotosBatchState = { imported: number; unmatched: string[] } | undefined;
+export type PrepareUploadResult = { photoId: string; uploadUrl: string } | { error: string };
 
-// Import groupé (glisser-déposer de tout un shooting d'un coup) — retour
-// d'Enzo, 2026-08-22 : "le moment où je dois importer mes photos n'est
-// pas logique et trop difficile à comprendre". L'ancien formulaire
-// demandait systématiquement DEUX fichiers par photo (original + aperçu
-// JPEG), un par un, sans expliquer pourquoi. Ici : les fichiers déjà
-// affichables (JPEG/PNG) servent directement d'aperçu, sans rien demander
-// de plus ; seuls les RAW ont besoin d'un aperçu à associer, retrouvé
-// automatiquement par nom de fichier (voir lib/domain/filename-match.ts,
-// même logique que l'import groupé des finaux retouchés).
-export async function uploadPhotosBatchAction(
+export async function prepareOriginalUploadAction(
   galleryId: string,
-  _prevState: UploadPhotosBatchState,
-  formData: FormData,
-): Promise<UploadPhotosBatchState> {
+  filename: string,
+  contentType: string,
+): Promise<PrepareUploadResult> {
   await verifySession();
 
-  const originals = formData.getAll("originals").filter((f): f is File => f instanceof File && f.size > 0);
-  const previews = formData.getAll("previews").filter((f): f is File => f instanceof File && f.size > 0);
+  const photoId = randomUUID();
+  const extension = extensionOf(filename) || "raw";
+  const key = buildPhotoObjectKey({ galleryId, photoId, kind: "original", extension });
 
-  if (originals.length === 0) {
-    return { imported: 0, unmatched: [] };
+  const storage = getStorageAdapter();
+  const uploadUrl = await storage.getUploadUrl(
+    "originals",
+    key,
+    contentType || "application/octet-stream",
+  );
+
+  return { photoId, uploadUrl };
+}
+
+export type PreparePreviewSourceResult = { uploadUrl: string } | { error: string };
+
+// Pour un RAW : l'aperçu JPEG exporté par Enzo est lui aussi envoyé
+// directement (même raison — peut dépasser 4,5 Mo), à une clé temporaire
+// dans le bucket "originals" (jamais référencée dans un Photo, supprimée
+// juste après avoir servi à générer le vrai aperçu — voir
+// finalizeOriginalImportAction).
+export async function preparePreviewSourceUploadAction(
+  galleryId: string,
+  photoId: string,
+): Promise<PreparePreviewSourceResult> {
+  await verifySession();
+
+  const key = buildPhotoObjectKey({ galleryId, photoId, kind: "preview-source", extension: "jpg" });
+  const storage = getStorageAdapter();
+  const uploadUrl = await storage.getUploadUrl("originals", key, "image/jpeg");
+
+  return { uploadUrl };
+}
+
+export type FinalizeImportResult = { success: true } | { error: string };
+
+export async function finalizeOriginalImportAction(
+  galleryId: string,
+  photoId: string,
+  filename: string,
+  hasPreviewSource: boolean,
+): Promise<FinalizeImportResult> {
+  await verifySession();
+
+  const extension = extensionOf(filename) || "raw";
+  const storage = getStorageAdapter();
+  const originalKey = buildPhotoObjectKey({ galleryId, photoId, kind: "original", extension });
+  const previewSourceKey = hasPreviewSource
+    ? buildPhotoObjectKey({ galleryId, photoId, kind: "preview-source", extension: "jpg" })
+    : null;
+
+  let previewSourceBuffer: Buffer;
+  try {
+    previewSourceBuffer = await storage.getObjectBuffer(
+      "originals",
+      previewSourceKey ?? originalKey,
+    );
+  } catch (error) {
+    console.error("Échec de lecture du fichier envoyé :", error);
+    return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
   }
 
-  const previewCandidates = previews.map((file) => ({ id: file.name, filename: file.name }));
-  const unmatched: string[] = [];
-  let imported = 0;
+  try {
+    await importPhoto({ galleryId, photoId, filename, originalKey, previewSourceBuffer });
+  } catch (error) {
+    console.error("Échec de la finalisation de l'import :", error);
+    return { error: "L'import a échoué." };
+  }
 
-  for (const original of originals) {
-    const extension = extensionOf(original.name) || "raw";
-    const originalBuffer = Buffer.from(await original.arrayBuffer());
-    let previewSourceBuffer: Buffer;
-
-    if (DISPLAYABLE_EXTENSIONS.has(extension)) {
-      previewSourceBuffer = originalBuffer;
-    } else {
-      const matchedName = matchFilename(previewCandidates, original.name);
-      const matchedFile = matchedName ? previews.find((file) => file.name === matchedName) : undefined;
-      if (!matchedFile) {
-        unmatched.push(original.name);
-        continue;
-      }
-      previewSourceBuffer = Buffer.from(await matchedFile.arrayBuffer());
-    }
-
-    try {
-      await importPhoto({
-        galleryId,
-        filename: original.name,
-        originalBuffer,
-        originalExtension: extension,
-        originalContentType: original.type || "application/octet-stream",
-        previewSourceBuffer,
-      });
-      imported += 1;
-    } catch (error) {
-      console.error("Échec de l'import photo (lot) :", error);
-      unmatched.push(original.name);
-    }
+  if (previewSourceKey) {
+    await storage.deleteObject("originals", previewSourceKey).catch(() => {
+      // Best-effort : un aperçu source non nettoyé n'est jamais exposé
+      // (bucket "originals", jamais référencé dans un Photo) — pas grave.
+    });
   }
 
   revalidatePath(`/admin/galleries/${galleryId}`);
-  return { imported, unmatched };
+  return { success: true };
 }

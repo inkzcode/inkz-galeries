@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { motion, type Variants } from "motion/react";
-import { uploadFinalPhotosBatchAction } from "./final-upload-actions";
+import { uploadFinalsDirectlyBatch } from "./direct-final-upload";
 import { FinalUploadForm } from "./final-upload-form";
 
 export type RetouchPhoto = {
@@ -45,9 +45,12 @@ export function RetouchWorkspace({
   galleryId: string;
   photos: RetouchPhoto[];
 }) {
-  const boundAction = uploadFinalPhotosBatchAction.bind(null, galleryId);
-  const [state, formAction, pending] = useActionState(boundAction, undefined);
   const [, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [state, setState] = useState<{ matched: number; unmatched: string[] } | undefined>(
+    undefined,
+  );
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -56,9 +59,18 @@ export function RetouchWorkspace({
 
   function submitFiles(files: FileList) {
     if (files.length === 0) return;
-    const data = new FormData();
-    Array.from(files).forEach((file) => data.append("finals", file));
-    startTransition(() => formAction(data));
+    const fileArray = Array.from(files);
+    const candidates = photos.map((p) => ({ id: p.id, filename: p.filename }));
+    setPending(true);
+    setProgress({ done: 0, total: fileArray.length });
+    startTransition(async () => {
+      const result = await uploadFinalsDirectlyBatch(galleryId, candidates, fileArray, (done, t) =>
+        setProgress({ done, total: t }),
+      );
+      setState(result);
+      setPending(false);
+      setProgress(null);
+    });
   }
 
   return (
@@ -97,7 +109,11 @@ export function RetouchWorkspace({
         }`}
       >
         <p className="text-sm font-medium text-ink">
-          {pending ? "Import en cours…" : "Déposez ici tous vos fichiers retouchés"}
+          {pending
+            ? progress
+              ? `Import en cours… ${progress.done}/${progress.total}`
+              : "Import en cours…"
+            : "Déposez ici tous vos fichiers retouchés"}
         </p>
         <p className="text-xs text-muted">
           Reconnus automatiquement par nom de fichier — ou cliquez pour parcourir.
@@ -126,8 +142,7 @@ export function RetouchWorkspace({
           {state.unmatched.length > 0 && (
             <div className={state.matched > 0 ? "mt-2" : undefined}>
               <p className="text-danger">
-                Non reconnu{state.unmatched.length > 1 ? "s" : ""} (nom de fichier
-                différent du nom d&apos;origine) :
+                Échec (nom de fichier non reconnu, ou envoi impossible) pour :
               </p>
               <ul className="mt-1 list-disc pl-5 text-ink-soft">
                 {state.unmatched.map((name) => (

@@ -1,7 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { getStorageAdapter } from "@/lib/storage/client";
-import { buildPhotoObjectKey } from "@/lib/storage/keys";
 import {
   onDelivered,
   onFinalFilesImported,
@@ -20,8 +19,10 @@ import { sendGalleryReadyEmail } from "@/lib/email/send-gallery-ready-email";
 export async function importFinalPhoto(
   galleryId: string,
   photoId: string,
-  finalBuffer: Buffer,
-  contentType: string,
+  /** Déjà déposé directement à cette clé (bucket "previews") avant
+   * l'appel ici — voir final-upload-actions.ts. Plus aucun octet du
+   * fichier ne transite par cette fonction. */
+  finalKey: string,
 ): Promise<{ galleryReady: boolean } | null> {
   const photo = await prisma.photo.findUnique({
     where: { id: photoId },
@@ -34,11 +35,6 @@ export async function importFinalPhoto(
   }
 
   const gallery = await prisma.gallery.findUniqueOrThrow({ where: { id: galleryId } });
-
-  const storage = getStorageAdapter();
-  const extension = contentType.includes("png") ? "png" : "jpg";
-  const finalKey = buildPhotoObjectKey({ galleryId, photoId, kind: "final", extension });
-  await storage.putObject("previews", finalKey, finalBuffer, contentType);
 
   await prisma.photo.update({
     where: { id: photoId },

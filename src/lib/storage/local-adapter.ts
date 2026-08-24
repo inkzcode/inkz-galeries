@@ -28,6 +28,13 @@ export function createLocalStorageAdapter(rootDir: string = process.cwd()): Stor
     async getObjectBuffer(bucket, key) {
       return readFile(path.join(dirFor(bucket, rootDir), key));
     },
+    async getUploadUrl(bucket, key) {
+      // Pas de vraie URL signée en local (pas de stockage objet à côté) —
+      // pointe vers une route de dev qui écrit directement sur disque, pour
+      // que le même code client (PUT direct) fonctionne dans les deux
+      // environnements. Voir app/api/dev-upload/route.ts.
+      return `/api/dev-upload?bucket=${bucket}&key=${encodeURIComponent(key)}`;
+    },
     async getPreviewUrl(key) {
       return `/dev-previews/${key}`;
     },

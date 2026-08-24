@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { uploadFinalPhotoAction } from "./final-upload-actions";
+import { useRef, useState, useTransition } from "react";
+import { uploadFinalDirectly } from "./direct-final-upload";
 
 export function FinalUploadForm({
   galleryId,
@@ -12,12 +12,35 @@ export function FinalUploadForm({
   photoId: string;
   alreadyImported: boolean;
 }) {
-  const boundAction = uploadFinalPhotoAction.bind(null, galleryId, photoId);
-  const [state, formAction, pending] = useActionState(boundAction, undefined);
+  const [, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const file = inputRef.current?.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setSuccess(false);
+    setPending(true);
+    startTransition(async () => {
+      const ok = await uploadFinalDirectly(galleryId, photoId, file);
+      setPending(false);
+      if (!ok) {
+        setError("L'import a échoué.");
+        return;
+      }
+      setSuccess(true);
+      if (inputRef.current) inputRef.current.value = "";
+    });
+  }
 
   return (
-    <form action={formAction} className="flex flex-wrap items-center gap-2">
-      <input type="file" name="final" accept="image/*" required className="text-xs" />
+    <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
+      <input ref={inputRef} type="file" accept="image/*" required className="text-xs" />
       <button
         type="submit"
         disabled={pending}
@@ -25,8 +48,8 @@ export function FinalUploadForm({
       >
         {pending ? "Import…" : alreadyImported ? "Remplacer" : "Importer le final"}
       </button>
-      {state?.error && <span className="text-xs text-danger">{state.error}</span>}
-      {state?.success && <span className="text-xs text-success">Importé ✓</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
+      {success && <span className="text-xs text-success">Importé ✓</span>}
     </form>
   );
 }

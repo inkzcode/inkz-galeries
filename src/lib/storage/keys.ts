@@ -2,7 +2,7 @@
 // de fichier, pour éviter toute collision ou fuite entre galeries (brief
 // §12). Logique pure, testable sans stockage réel.
 
-export type PhotoObjectKind = "original" | "preview" | "final";
+export type PhotoObjectKind = "original" | "preview" | "final" | "preview-source";
 
 // L'extension vient in fine d'un nom de fichier fourni par l'utilisateur
 // (upload). Ne garder que [a-z0-9] : une extension "jpg/../../etc" ne doit

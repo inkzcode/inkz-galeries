@@ -2,76 +2,63 @@
 
 import { revalidatePath } from "next/cache";
 import { verifySession } from "@/lib/auth/dal";
+import { getStorageAdapter } from "@/lib/storage/client";
+import { buildPhotoObjectKey } from "@/lib/storage/keys";
 import { importFinalPhoto } from "@/lib/services/final-delivery-service";
-import { getSelectedPhotos } from "@/lib/services/confirm-selection-service";
-import { matchFilename } from "@/lib/domain/filename-match";
 
-export type UploadFinalState = { error?: string; success?: boolean } | undefined;
+// Dépôt DIRECT vers le stockage (même raison que photos-actions.ts —
+// Vercel plafonne à 4,5 Mo le corps d'une requête, un final HD dépasse
+// facilement ça) : le navigateur envoie directement via une URL signée,
+// puis une action légère finalise (mise à jour de la base uniquement —
+// contrairement à un original, un final n'est jamais retraité, donc pas
+// besoin de relire ses octets ici).
 
-export async function uploadFinalPhotoAction(
+function extensionOf(contentType: string): string {
+  return contentType.includes("png") ? "png" : "jpg";
+}
+
+export type PrepareFinalUploadResult = { uploadUrl: string } | { error: string };
+
+export async function prepareFinalUploadAction(
   galleryId: string,
   photoId: string,
-  _prevState: UploadFinalState,
-  formData: FormData,
-): Promise<UploadFinalState> {
+  contentType: string,
+): Promise<PrepareFinalUploadResult> {
   await verifySession();
 
-  const file = formData.get("final");
-  if (!(file instanceof File) || file.size === 0) {
-    return { error: "Fichier manquant." };
-  }
-
-  const result = await importFinalPhoto(
+  const key = buildPhotoObjectKey({
     galleryId,
     photoId,
-    Buffer.from(await file.arrayBuffer()),
-    file.type || "image/jpeg",
-  );
+    kind: "final",
+    extension: extensionOf(contentType),
+  });
+  const storage = getStorageAdapter();
+  const uploadUrl = await storage.getUploadUrl("previews", key, contentType);
+
+  return { uploadUrl };
+}
+
+export type FinalizeFinalImportResult = { success: true } | { error: string };
+
+export async function finalizeFinalImportAction(
+  galleryId: string,
+  photoId: string,
+  contentType: string,
+): Promise<FinalizeFinalImportResult> {
+  await verifySession();
+
+  const finalKey = buildPhotoObjectKey({
+    galleryId,
+    photoId,
+    kind: "final",
+    extension: extensionOf(contentType),
+  });
+
+  const result = await importFinalPhoto(galleryId, photoId, finalKey);
   if (!result) {
     return { error: "Import impossible." };
   }
 
   revalidatePath(`/admin/galleries/${galleryId}`);
   return { success: true };
-}
-
-export type UploadFinalBatchState = { matched: number; unmatched: string[] } | undefined;
-
-// Import groupé (glisser-déposer de tous les fichiers exportés depuis
-// Lightroom d'un coup) — chaque fichier est associé à une photo
-// sélectionnée par son nom (voir lib/domain/final-filename-match.ts).
-// Les fichiers non reconnus sont listés plutôt que rejetés silencieusement
-// — Enzo peut alors les importer à la main (repli conservé sur chaque
-// carte de `retouch-workspace.tsx`).
-export async function uploadFinalPhotosBatchAction(
-  galleryId: string,
-  _prevState: UploadFinalBatchState,
-  formData: FormData,
-): Promise<UploadFinalBatchState> {
-  await verifySession();
-
-  const files = formData.getAll("finals").filter((f): f is File => f instanceof File && f.size > 0);
-  if (files.length === 0) {
-    return { matched: 0, unmatched: [] };
-  }
-
-  const candidates = await getSelectedPhotos(galleryId);
-  const unmatched: string[] = [];
-  let matched = 0;
-
-  for (const file of files) {
-    const photoId = matchFilename(candidates, file.name);
-    const result = photoId
-      ? await importFinalPhoto(galleryId, photoId, Buffer.from(await file.arrayBuffer()), file.type || "image/jpeg")
-      : null;
-
-    if (result) {
-      matched += 1;
-    } else {
-      unmatched.push(file.name);
-    }
-  }
-
-  revalidatePath(`/admin/galleries/${galleryId}`);
-  return { matched, unmatched };
 }

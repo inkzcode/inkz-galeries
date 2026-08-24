@@ -53,6 +53,18 @@ export function createS3StorageAdapter(config: S3StorageConfig): StorageAdapter 
       );
     },
 
+    async getUploadUrl(bucket, key, contentType) {
+      return getSignedUrl(
+        client,
+        new PutObjectCommand({
+          Bucket: bucketName(bucket, config),
+          Key: key,
+          ContentType: contentType,
+        }),
+        { expiresIn: 60 * 15 },
+      );
+    },
+
     async getObjectBuffer(bucket, key) {
       const response = await client.send(
         new GetObjectCommand({ Bucket: bucketName(bucket, config), Key: key }),

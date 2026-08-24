@@ -1,5 +1,4 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { getStorageAdapter } from "@/lib/storage/client";
 import { buildPhotoObjectKey } from "@/lib/storage/keys";
@@ -16,10 +15,13 @@ import { onFirstPhotoImported } from "@/lib/domain/gallery-status-machine";
 
 export type ImportPhotoInput = {
   galleryId: string;
+  /** Généré par prepareOriginalUploadAction — le fichier a déjà été
+   * envoyé DIRECTEMENT au stockage à cette clé avant l'appel ici (voir
+   * photos-actions.ts) : plus aucun octet du fichier ne transite par
+   * cette fonction, seulement ses métadonnées. */
+  photoId: string;
   filename: string;
-  originalBuffer: Buffer;
-  originalExtension: string;
-  originalContentType: string;
+  originalKey: string;
   previewSourceBuffer: Buffer;
 };
 
@@ -28,21 +30,8 @@ export async function importPhoto(input: ImportPhotoInput) {
     where: { id: input.galleryId },
   });
 
-  const photoId = randomUUID();
+  const { photoId, originalKey } = input;
   const storage = getStorageAdapter();
-
-  const originalKey = buildPhotoObjectKey({
-    galleryId: gallery.id,
-    photoId,
-    kind: "original",
-    extension: input.originalExtension,
-  });
-  await storage.putObject(
-    "originals",
-    originalKey,
-    input.originalBuffer,
-    input.originalContentType,
-  );
 
   const preview = await generatePreview(input.previewSourceBuffer, {
     watermarkLevel: gallery.watermarkLevel,

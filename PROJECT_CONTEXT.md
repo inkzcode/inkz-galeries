@@ -1983,6 +1983,70 @@ validation peu claires) — resté sur ordinateur (pas iPad) pour cette
 étape ponctuelle de configuration, comme pour toute mise en place initiale
 de ce type.
 
+## 6novovicies. Upload direct navigateur → stockage (import cassé au-delà de 4,5 Mo sur Vercel) (2026-08-24)
+
+Premier vrai test d'Enzo sur le site en ligne : import de 119 photos d'un
+shooting réel → échec, message "la base de données n'a pas répondu à
+temps". Message trompeur (bandeau générique de `admin/error.tsx`, écrit
+pour LA cause d'erreur la plus probable jusqu'ici, pas la seule
+possible) — la vraie cause n'a rien à voir avec Neon.
+
+**Cause réelle** : les fonctions serverless Vercel plafonnent à **4,5 Mo**
+le corps d'une requête entrante — une limite d'infrastructure, non
+contournable depuis `next.config.ts` (`serverActions.bodySizeLimit` ne
+change rien à cette limite-là, vérifié par recherche). Jusqu'ici, chaque
+photo (originale ET finale retouchée) transitait entièrement par une
+Server Action — un lot de 119 photos, ou même un seul RAW (couramment
+20-80 Mo), dépasse ça très largement. Ce risque était déjà noté comme
+"vraie évolution" nécessaire ailleurs dans ce document, jamais construit
+avant d'être réellement heurté.
+
+**Fix : dépôt direct navigateur → stockage**, le serveur Next ne voit
+plus jamais les octets d'un fichier :
+1. `StorageAdapter` gagne `getUploadUrl(bucket, key, contentType)` — URL
+   signée PUT (15 min), implémentée dans `s3-adapter.ts`
+   (`PutObjectCommand` + `getSignedUrl`) et, pour le dev local (pas de
+   vrai stockage objet à côté), via une nouvelle route
+   `app/api/dev-upload/route.ts` qui écrit sur disque — même chemin de
+   code client dans les deux environnements, gardée explicitement hors
+   production (`NODE_ENV === "production"` → 403).
+2. Chaque import se fait en 2-3 appels légers (quelques octets, jamais le
+   fichier) plutôt qu'un seul gros : `prepare*UploadAction` (génère
+   l'URL signée) → le navigateur fait un vrai `PUT` direct sur cette URL
+   → `finalize*ImportAction` (va chercher les octets déjà déposés côté
+   stockage — jamais depuis la requête du navigateur — pour finir le
+   traitement : aperçu + watermark pour un original, mise à jour de
+   statut pour un final déjà tel quel).
+3. `import-photo.ts`/`final-delivery-service.ts` : `importPhoto()` et
+   `importFinalPhoto()` prennent désormais une clé déjà déposée plutôt
+   qu'un buffer — ne réécrivent plus jamais l'original/le final, plus
+   volumineux appel réseau économisé au passage.
+4. Nouveau fichier partagé `direct-upload-helpers.ts`
+   (`putDirect`/`runWithConcurrency`, 3 envois simultanés max — 119 en
+   parallèle saturerait le navigateur et déclencherait 119 traitements
+   d'image en même temps côté serveur) — réutilisé par
+   `direct-photo-upload.ts` (originaux, y compris le formulaire manuel
+   `single-photo-upload-form.tsx`, un gros RAW seul dépasse aussi la
+   limite) et `direct-final-upload.ts` (finaux retouchés, même bug,
+   corrigé en même temps avant qu'Enzo ne le heurte à son tour).
+5. **Bug trouvé en relisant, pas en testant** — le Content-Type envoyé
+   au PUT direct doit être EXACTEMENT celui utilisé pour signer l'URL
+   (sinon 403 côté S3/B2, signature invalide) ; `putDirect()` prenait
+   d'abord `file.type` du navigateur, qui aurait pu diverger de la
+   valeur hardcodée `"image/jpeg"` utilisée pour signer l'URL de
+   l'aperçu source d'un RAW. Corrigé : `putDirect()` prend maintenant le
+   Content-Type en paramètre explicite, jamais recalculé depuis le
+   fichier.
+
+**Non testé en conditions réelles** — perte de la session admin locale
+(cookie expiré) au moment de ce fix, et `server-only` empêche de tester
+`import-photo.ts` isolément via un script (même limitation que documentée
+plus haut dans ce fichier pour les fichiers de service). `tsc`/`eslint`/
+`vitest` (81 tests)/`next build` passent tous, relecture attentive
+(notamment le point 5 ci-dessus, trouvé cette façon). **À valider par
+Enzo — conseillé de retester d'abord avec 2-3 photos avant de relancer
+les 119 d'un coup.**
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

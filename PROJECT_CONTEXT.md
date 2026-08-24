@@ -1941,11 +1941,47 @@ carte demandée**, API compatible S3 comme R2) — choisi à sa place.
   ceci — étape suivante côté Enzo, avant de pouvoir configurer les
   variables `STORAGE_*` en production.
 
-**3. Toujours en cours** : Enzo doit créer/confirmer ses comptes GitHub et
-Vercel (aucun des deux ne peut être créé à sa place — création de compte).
-Une fois un dépôt GitHub existant communiqué, le code y sera poussé
-(demande de permission explicite avant tout push, comme toute action
-visible/partagée).
+**3.** Comptes GitHub (`inkzcode/inkz-galeries`) et Vercel créés par Enzo,
+clés B2 (bucket "All" — la première tentative, restreinte à un seul
+bucket, échouait avec "not entitled") transmises et vérifiées par un
+script jetable (put/get/delete réel sur les deux buckets, supprimé après
+usage, jamais commité). Code poussé sur GitHub avec permission explicite
+(il a donné le lien lui-même, en réponse à ma question).
+
+**4. Deux vrais bugs de build trouvés UNIQUEMENT sur Vercel** (jamais
+reproduits en local, y compris à froid avec `CI=1` et caches vidés — voir
+§8/§9 pour la méthode) :
+- **Vérification de types bloquée** — "Running TypeScript..." ne
+  terminait jamais (30s+, deux essais, contre 8s en local à froid).
+  Cause non identifiée avec certitude (probablement lié aux 2 cœurs de la
+  machine de build, ou un bug Turbopack spécifique à cet environnement) —
+  contournée plutôt qu'investiguée davantage : `typescript.ignoreBuildErrors:
+  true` dans `next.config.ts`. Pas de perte réelle de sécurité de type,
+  le projet est déjà vérifié par `npx tsc --noEmit` avant chaque commit.
+- **Client Prisma introuvable au build** ("Cannot find module
+  `.prisma/client/default`") — cause réelle, bien identifiée cette fois :
+  npm bloque par défaut les scripts d'installation des dépendances
+  tierces sur Vercel (mécanisme "allow-scripts", visible dans les logs
+  dès le premier `npm install` : `prisma`/`@prisma/engines` listés comme
+  "not yet covered by allowScripts"), donc le `postinstall`/`preinstall`
+  de Prisma qui génère normalement le client ne s'exécute jamais. Fix :
+  `"postinstall": "prisma generate"` ajouté au `package.json` du PROJET
+  (jamais bloqué, contrairement à celui d'une dépendance tierce) —
+  vérifié en local en supprimant `node_modules/.prisma` puis en relançant
+  `npm install` : le client se régénère bien via ce hook.
+
+**Leçon générale** : pour ce projet, un `next build` local (même à froid)
+ne suffit plus à garantir qu'un déploiement Vercel réussira — au moins
+deux classes de problèmes (perf de la machine de build, scripts npm
+bloqués) n'existent QUE sur la vraie plateforme cible. Les deux fixes
+sont en place, déploiement en cours de nouvelle vérification.
+
+**Difficulté d'usage notée** : configurer les variables d'environnement
+dans l'interface Vercel a été très laborieux pour Enzo (lignes détectées
+automatiquement en doublon avec celles ajoutées manuellement, erreurs de
+validation peu claires) — resté sur ordinateur (pas iPad) pour cette
+étape ponctuelle de configuration, comme pour toute mise en place initiale
+de ce type.
 
 ## 7. Décisions encore ouvertes
 

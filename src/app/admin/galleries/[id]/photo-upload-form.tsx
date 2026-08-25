@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { uploadPhotosDirectly, type UploadFailure } from "./direct-photo-upload";
+import { uploadPhotosDirectly, type UploadFailure, type UploadProgress } from "./direct-photo-upload";
 import { SinglePhotoUploadForm } from "./single-photo-upload-form";
 
 const DISPLAYABLE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
@@ -24,7 +24,7 @@ function extensionOf(filename: string): string {
 export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
   const [, startTransition] = useTransition();
   const [pending, setPending] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [state, setState] = useState<{ imported: number; unmatched: UploadFailure[] } | undefined>(
     undefined,
   );
@@ -50,42 +50,83 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
     setOriginals((prev) => prev.filter((file) => file.name !== name));
   }
 
-  function handleSubmit() {
-    const toUpload = originals;
-    const previewFiles = previews;
-    setOriginals([]);
-    setPreviews([]);
+  function runUpload(toUpload: File[], previewFiles: File[]) {
     setPending(true);
-    setProgress({ done: 0, total: toUpload.length });
+    setProgress({ done: 0, total: toUpload.length, imported: 0, failed: 0 });
     startTransition(async () => {
-      const result = await uploadPhotosDirectly(galleryId, toUpload, previewFiles, (done, total) =>
-        setProgress({ done, total }),
-      );
+      const result = await uploadPhotosDirectly(galleryId, toUpload, previewFiles, setProgress);
       setState(result);
       setPending(false);
       setProgress(null);
     });
   }
 
+  function handleSubmit() {
+    const toUpload = originals;
+    const previewFiles = previews;
+    setOriginals([]);
+    setPreviews([]);
+    runUpload(toUpload, previewFiles);
+  }
+
+  // Réessaie directement les fichiers échoués — leur référence est
+  // conservée (voir direct-photo-upload.ts), inutile pour Enzo de les
+  // rechercher un par un (retour d'Enzo, 2026-08-25).
+  function handleRetryFailed() {
+    if (!state) return;
+    const toRetry = state.unmatched.map((failure) => failure.file);
+    setState(undefined);
+    runUpload(toRetry, []);
+  }
+
   return (
     <div className="flex flex-col gap-4">
+      {pending && progress && (
+        <div className="rounded-lg border border-accent bg-accent-tint p-4">
+          <div className="mb-2 flex items-center justify-between text-sm font-medium text-ink">
+            <span>Import en cours, ne fermez pas cette page…</span>
+            <span>
+              {progress.done} / {progress.total}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-paper">
+            <div
+              className="h-full bg-accent transition-all duration-300"
+              style={{ width: `${(progress.done / progress.total) * 100}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-ink-soft">
+            {progress.imported} importée{progress.imported > 1 ? "s" : ""}
+            {progress.failed > 0
+              ? `, ${progress.failed} échec${progress.failed > 1 ? "s" : ""}`
+              : ""}
+            {" — le temps dépend surtout de la vitesse d'envoi de votre connexion."}
+          </p>
+        </div>
+      )}
+
       <div
         onDragOver={(event) => {
+          if (pending) return;
           event.preventDefault();
           setDragOver("originals");
         }}
         onDragLeave={() => setDragOver(null)}
         onDrop={(event) => {
           event.preventDefault();
+          if (pending) return;
           setDragOver(null);
           addOriginals(event.dataTransfer.files);
         }}
-        onClick={() => originalsInputRef.current?.click()}
+        onClick={() => !pending && originalsInputRef.current?.click()}
         role="button"
-        tabIndex={0}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors ${
-          dragOver === "originals" ? "border-accent bg-accent-tint" : "border-border hover:border-ink"
-        }`}
+        tabIndex={pending ? -1 : 0}
+        aria-disabled={pending}
+        className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors ${
+          pending
+            ? "cursor-not-allowed border-border opacity-50"
+            : "cursor-pointer border-border hover:border-ink"
+        } ${dragOver === "originals" ? "border-accent bg-accent-tint" : ""}`}
       >
         <p className="text-sm font-medium text-ink">Déposez vos photos ici</p>
         <p className="text-xs text-muted">
@@ -97,6 +138,7 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
           ref={originalsInputRef}
           type="file"
           multiple
+          disabled={pending}
           accept="image/*,.cr2,.cr3,.nef,.arw,.dng,.raf,.orf,.rw2"
           className="hidden"
           onChange={(event) => {
@@ -169,18 +211,13 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
         </div>
       )}
 
-      {originals.length > 0 && (
+      {originals.length > 0 && !pending && (
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={pending}
-          className="inline-flex w-fit items-center justify-center rounded-md bg-ink px-5 py-2.5 text-sm font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="inline-flex w-fit items-center justify-center rounded-md bg-ink px-5 py-2.5 text-sm font-medium text-paper transition-opacity hover:opacity-90"
         >
-          {pending
-            ? progress
-              ? `Import… ${progress.done}/${progress.total}`
-              : "Import…"
-            : `Importer ${originals.length} photo${originals.length > 1 ? "s" : ""}`}
+          {`Importer ${originals.length} photo${originals.length > 1 ? "s" : ""}`}
         </button>
       )}
 
@@ -194,7 +231,18 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
           )}
           {state.unmatched.length > 0 && (
             <div className={state.imported > 0 ? "mt-2" : undefined}>
-              <p className="text-danger">Échec pour :</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-danger">Échec pour :</p>
+                {!pending && (
+                  <button
+                    type="button"
+                    onClick={handleRetryFailed}
+                    className="shrink-0 rounded-md border border-border px-3 py-1 text-xs font-medium text-ink transition-colors hover:border-ink"
+                  >
+                    Réessayer {state.unmatched.length > 1 ? `les ${state.unmatched.length}` : ""}
+                  </button>
+                )}
+              </div>
               <ul className="mt-1 list-disc pl-5 text-ink-soft">
                 {state.unmatched.map((failure) => (
                   <li key={failure.filename}>
@@ -202,9 +250,6 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
                   </li>
                 ))}
               </ul>
-              <p className="mt-1 text-xs text-muted">
-                Utilisez l&apos;import manuel ci-dessous pour celles-ci.
-              </p>
             </div>
           )}
         </div>

@@ -25,6 +25,35 @@ function extensionOf(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase();
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Import du 2026-08-25 (119 RAW) : ~10% ont échoué avec "fichier
+// introuvable" juste après un dépôt direct pourtant réussi (PUT signé
+// confirmé 200 côté navigateur) — cohérent avec un court délai de
+// cohérence lecture-après-écriture chez Backblaze sous forte charge
+// concurrente, pas une vraie perte de fichier. Quelques nouvelles
+// tentatives espacées suffisent dans la plupart des cas, avant d'obliger
+// Enzo à relancer l'import pour ces photos.
+async function getObjectBufferWithRetry(
+  storage: ReturnType<typeof getStorageAdapter>,
+  bucket: Parameters<ReturnType<typeof getStorageAdapter>["getObjectBuffer"]>[0],
+  key: string,
+): Promise<Buffer> {
+  const delaysMs = [300, 800, 1500];
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= delaysMs.length; attempt += 1) {
+    try {
+      return await storage.getObjectBuffer(bucket, key);
+    } catch (error) {
+      lastError = error;
+      if (attempt < delaysMs.length) await wait(delaysMs[attempt]);
+    }
+  }
+  throw lastError;
+}
+
 export type PrepareUploadResult = { photoId: string; uploadUrl: string } | { error: string };
 
 export async function prepareOriginalUploadAction(
@@ -91,14 +120,14 @@ export async function finalizeOriginalImportAction(
     // Aperçu JPEG fourni manuellement (retour d'Enzo) — prioritaire sur
     // l'extraction automatique, utile si celle-ci donne un mauvais résultat.
     try {
-      previewSourceBuffer = await storage.getObjectBuffer("originals", previewSourceKey);
+      previewSourceBuffer = await getObjectBufferWithRetry(storage, "originals", previewSourceKey);
     } catch (error) {
       console.error("Échec de lecture du fichier envoyé :", error);
       return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
     }
   } else if (isDisplayable) {
     try {
-      previewSourceBuffer = await storage.getObjectBuffer("originals", originalKey);
+      previewSourceBuffer = await getObjectBufferWithRetry(storage, "originals", originalKey);
     } catch (error) {
       console.error("Échec de lecture du fichier envoyé :", error);
       return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
@@ -109,7 +138,7 @@ export async function finalizeOriginalImportAction(
     // pas avoir à le faire [...] avant [la retouche] ça doit être en RAW").
     let rawBuffer: Buffer;
     try {
-      rawBuffer = await storage.getObjectBuffer("originals", originalKey);
+      rawBuffer = await getObjectBufferWithRetry(storage, "originals", originalKey);
     } catch (error) {
       console.error("Échec de lecture du fichier envoyé :", error);
       return { error: "Le fichier envoyé est introuvable — réessayer l'import." };

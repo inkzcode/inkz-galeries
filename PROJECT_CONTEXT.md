@@ -2232,6 +2232,46 @@ fonctionnalité, à confirmer par un vrai test d'Enzo sur la plateforme
 réelle — la seule vérification qui ait fini par révéler chacun des
 quatre pièges jusqu'ici.
 
+**🎉 Ça a marché.** Quatrième tentative concluante — confirmé par Enzo
+en conditions réelles ("ÇA MARCHEEEEEEEEE"). L'extraction automatique
+d'aperçu RAW fonctionne en production.
+
+**Premier vrai import complet (119 RAW) — 102 réussis, 13 échecs**,
+deux causes distinctes :
+- `IMG_9097.cr3` — "Load failed" (message Safari/WebKit pour un fetch
+  interrompu) : un aléa réseau ponctuel pendant l'envoi direct, pas un
+  bug — une nouvelle tentative suffit normalement.
+- Les 12 autres — "fichier introuvable" juste après un dépôt pourtant
+  réussi (PUT confirmé 200 côté navigateur). Cohérent avec un court
+  délai de cohérence lecture-après-écriture chez Backblaze sous forte
+  charge concurrente (~10% d'échecs sur un lot de 119 avec plusieurs
+  envois simultanés), pas une vraie perte de fichier.
+
+**Deux améliorations en réponse** (retour d'Enzo : "j'aimerais qu'il y
+ait un petit bouton qui me dise que ça charge [...] je dois aller les
+chercher une par une, je veux un bouton pour réessayer") :
+1. `getObjectBufferWithRetry()` (`photos-actions.ts`) — jusqu'à 3
+   nouvelles tentatives espacées (300ms/800ms/1500ms) avant d'abandonner
+   la lecture d'un fichier tout juste déposé — réduit directement le
+   nombre d'échecs du type "fichier introuvable" à la source, sans
+   qu'Enzo n'ait à intervenir.
+2. Vrai bouton "Réessayer" (`photo-upload-form.tsx`) — `UploadFailure`
+   conserve maintenant l'objet `File` original (pas seulement son nom),
+   donc réessayer relance l'envoi directement, sans qu'Enzo n'ait à
+   retrouver et resélectionner chaque photo échouée à la main.
+3. Barre de progression bien visible (bannière dédiée, pas seulement le
+   texte du bouton) + zone de dépôt verrouillée pendant l'envoi (évite
+   la question "je dois attendre ou recommencer ?") + concurrence
+   montée de 3 à 5 envois simultanés (gain modeste — le débit montant de
+   la connexion d'Enzo reste la vraie limite pour des RAW de 20-80 Mo).
+
+**Déploiement volontairement retardé jusqu'à la fin de l'import en
+cours** : pousser une nouvelle version pendant qu'Enzo importait ses 119
+RAW aurait invalidé les Server Actions déjà chargées dans son
+navigateur (identifiants d'action recalculés à chaque build) et cassé
+l'import en plein milieu — attendu la confirmation que l'import était
+terminé avant de déployer cette suite.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

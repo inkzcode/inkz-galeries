@@ -17,7 +17,11 @@ function extensionOf(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase();
 }
 
-export type UploadFailure = { filename: string; reason: string };
+// `file` conservé (pas juste son nom) pour permettre un vrai bouton
+// "Réessayer" qui relance l'envoi directement, sans qu'Enzo ait à
+// rechercher et resélectionner chaque photo échouée à la main (retour
+// d'Enzo, 2026-08-25 : "je dois aller les chercher une par une").
+export type UploadFailure = { filename: string; reason: string; file: File };
 
 async function uploadOnePhoto(
   galleryId: string,
@@ -74,22 +78,28 @@ async function uploadOnePhoto(
   }
 }
 
+export type UploadProgress = { done: number; total: number; imported: number; failed: number };
+
 export async function uploadPhotosDirectly(
   galleryId: string,
   originals: File[],
   previews: File[],
-  onProgress: (done: number, total: number) => void,
+  onProgress: (progress: UploadProgress) => void,
 ): Promise<{ imported: number; unmatched: UploadFailure[] }> {
   let imported = 0;
   let done = 0;
   const unmatched: UploadFailure[] = [];
 
-  await runWithConcurrency(originals, 3, async (file) => {
+  // 5 envois simultanés (retour d'Enzo, 2026-08-25 : "j'aimerais que ce
+  // soit plus rapide") — la vitesse réelle reste surtout bornée par le
+  // débit montant de sa connexion (des RAW de 20-80 Mo chacun), mais un
+  // peu plus de parallélisme aide sans risquer de saturer le navigateur.
+  await runWithConcurrency(originals, 5, async (file) => {
     const result = await uploadOnePhoto(galleryId, file, previews);
     if (result.ok) imported += 1;
-    else unmatched.push({ filename: result.filename, reason: result.reason });
+    else unmatched.push({ filename: result.filename, reason: result.reason, file });
     done += 1;
-    onProgress(done, originals.length);
+    onProgress({ done, total: originals.length, imported, failed: unmatched.length });
   });
 
   return { imported, unmatched };

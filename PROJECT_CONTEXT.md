@@ -2116,6 +2116,36 @@ pour tester `extractJpgFromRaw` de bout en bout** avant qu'Enzo ne le
 fasse en conditions réelles. `tsc`/`eslint`/`vitest`/`next build` passent
 tous, aucun avertissement au build.
 
+**Suite le même jour — le risque signalé s'est confirmé** : Enzo a
+retesté, `exiftool-vendored` échoue bien en production avec `Error: Perl
+must be installed` (log Vercel consulté directement, capture à l'appui —
+confirmation précise, pas une supposition). Remplacé par
+`@colorhythm/libraw-wasm` (`lib/imaging/extract-raw-preview.ts` réécrit) :
+- WebAssembly pur, zéro process externe, zéro interpréteur système — plus
+  de fichiers temporaires du tout (le build n'émet même plus
+  l'avertissement `os.tmpdir()` de tout à l'heure, cette version ne
+  touche jamais au disque).
+- Fork de `libraw.wasm` (ssssota) — celui-ci a aussi été essayé et écarté
+  : sa version publiée dépend du `Worker` du navigateur (`new
+  Worker(...)`), absent de Node.js par défaut (`typeof Worker ===
+  "undefined"` vérifié directement) ; le fork Colorhythm expose la même
+  bibliothèque LibRaw sans cette dépendance.
+- **Cette fois, vérifié RÉELLEMENT en Node.js avant d'écrire le code
+  définitif** (pas seulement lu la doc comme pour `exiftool-vendored`) :
+  script isolé (`LibRaw.initialize()` + `new LibRaw()` +
+  `waitUntilReady()`) exécuté avec succès en Node nu, aucune erreur
+  Worker/Perl/native. Toujours **pas de vrai fichier RAW public
+  trouvable rapidement** pour vérifier `unpackThumb()` +
+  `dcrawMakeMemThumb()` de bout en bout (plusieurs sources candidates
+  toutes en 404) — la extraction réelle sur un vrai fichier reste à
+  confirmer par Enzo, mais le problème structurel qui a fait échouer la
+  première tentative (dépendance manquante sur la plateforme) est cette
+  fois vérifié absent avant, pas découvert après coup.
+- API : `open()` (buffer) → `unpackThumb()` → `dcrawMakeMemThumb()` →
+  vérifie `type_ === "LIBRAW_IMAGE_JPEG"` avant d'utiliser `.data`
+  (certains RAW embarquent un aperçu dans un autre format — traité comme
+  "aucun aperçu utilisable" plutôt que planter).
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

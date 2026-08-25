@@ -114,7 +114,7 @@ export async function finalizeOriginalImportAction(
       console.error("Échec de lecture du fichier envoyé :", error);
       return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
     }
-    const extracted = await extractEmbeddedRawPreview(rawBuffer, extension);
+    const extracted = await extractEmbeddedRawPreview(rawBuffer);
     if (!extracted) {
       return {
         error:

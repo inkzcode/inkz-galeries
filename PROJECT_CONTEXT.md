@@ -2598,6 +2598,29 @@ dans le navigateur (aucun shooting publié pour l'instant, normal). **Pas
 de shooting réel publié pour tester le rendu avec du contenu** — à faire
 une fois qu'Enzo aura choisi une couverture sur un shooting livré.
 
+**Correction le même jour** : retour d'Enzo, "je ne veux pas que le
+portfolio soit simplement un petit mot en bas de la page, je veux une
+vraie galerie à grille sous le comment ça marche". La grille elle-même
+(gradient + légende, déjà construite pour `/portfolio`) est extraite dans
+`portfolio-grid.tsx`, réutilisée aux deux endroits plutôt que dupliquée.
+Pour l'intégrer sur la home, `page.tsx` — jusqu'ici un unique Client
+Component ("use client" en tête, toute la page animée via motion) — est
+devenu un Server Component `async` qui va chercher
+`listPortfolioEntries()` côté serveur, avec le même `force-dynamic` que
+`/portfolio` et pour la même raison. Le contenu animé (hero, "comment ça
+marche") ne pouvant pas rester dans un Server Component (motion exige
+"use client"), il est extrait tel quel dans `home-intro.tsx` ; le footer
+dans `home-footer.tsx` (le petit lien texte "Portfolio" qu'il contenait
+disparaît, redevenu redondant avec la vraie section juste au-dessus).
+`/portfolio` reste une page à part entière — lien direct partageable
+(bio Instagram, etc.), pas seulement un doublon.
+
+Vérifié : `tsc`/`eslint`/81 tests/build de production complet tous
+propres, `/` apparaît bien en `ƒ` (dynamique, plus `○`) dans la sortie du
+build. Rendu vérifié en direct dans le navigateur : la section apparaît
+au bon endroit, aucune erreur console, état vide affiché correctement
+(toujours aucun shooting publié pour l'instant).
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

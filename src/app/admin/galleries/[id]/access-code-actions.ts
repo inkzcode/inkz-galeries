@@ -9,12 +9,19 @@ export type IssueAccessCodeState = { plaintextCode?: string; error?: string } | 
 export async function issueAccessCodeAction(
   galleryId: string,
   _prevState: IssueAccessCodeState,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<IssueAccessCodeState> {
   await verifySession();
 
+  const expiresAtRaw = formData.get("expiresAt");
+  const expiresAt =
+    typeof expiresAtRaw === "string" && expiresAtRaw !== "" ? new Date(expiresAtRaw) : undefined;
+  if (expiresAt && Number.isNaN(expiresAt.getTime())) {
+    return { error: "Date d'expiration invalide." };
+  }
+
   try {
-    const plaintextCode = await issueAccessCode(galleryId);
+    const plaintextCode = await issueAccessCode(galleryId, expiresAt);
     revalidatePath(`/admin/galleries/${galleryId}`);
     return { plaintextCode };
   } catch (error) {

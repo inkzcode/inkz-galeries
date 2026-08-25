@@ -2328,6 +2328,62 @@ correspondent à TROIS MOMENTS distincts, pas juste deux bascules :
   derrière une bascule — c'est le mode d'emploi de la fonctionnalité de
   remarque elle-même, pas un contenu optionnel).
 
+## 6tertrigies. Audit du cahier des charges, premiers "petits trucs" du backlog, et typo Geomanist (2026-08-25)
+
+Enzo a fourni son cahier des charges fonctionnel complet (~40 points, écrit
+au tout début du projet) en demandant un tri : qu'est-ce qui est fait,
+qu'est-ce qui manque. Audit fait point par point contre le CODE réel (grep
++ lecture directe, pas la mémoire de session) et publié comme artifact
+partagé ("Chantier Inkz") — 5 points pas commencés (date d'expiration
+d'accès, 3 emails automatiques sur 4, téléchargement zip groupé, archivage
+réel, IA), 8 points à moitié faits (portfolio public, statut "Archivé"
+mort, avant/après, paiement réel, lien direct sans PIN, PWA, et deux
+points mineurs). Un point de l'audit initial ("distinction visuelle
+pensée/fait scientifique dans `raw-disclaimer.tsx`") s'est révélé
+obsolète en le revérifiant : le texte a été entièrement réécrit le
+2026-08-25 (voir §6duotrigies) et ne contient plus de référence
+scientifique à distinguer — retiré du backlog.
+
+Convention adoptée pour la suite : le "Chantier Inkz" (artifact partagé)
+doit être remis à jour à chaque changement livré, pas seulement
+PROJECT_CONTEXT.md — c'est le document qu'Enzo consulte pour trier le
+backlog avec moi.
+
+Premiers points du backlog attaqués, les plus rapides et sans ambiguïté
+produit :
+
+- **Date d'expiration des codes d'accès** (§5 du brief) — le champ
+  `AccessCode.expiresAt` existait déjà en base et `issueAccessCode()`
+  l'acceptait déjà en paramètre optionnel ; seul le formulaire admin ne
+  l'exposait pas. Ajouté un champ date optionnel dans
+  `access-code-form.tsx`, lu et parsé dans `issueAccessCodeAction`
+  (`access-code-actions.ts`), et affiché dans la liste des codes déjà
+  émis (`admin/galleries/[id]/page.tsx`, "Expire le…"/"Expiré le…" en
+  rouge si dépassé).
+- **Manifest PWA** (§37 du brief) — `src/app/manifest.ts` (convention
+  Next standard, vérifiée dans `node_modules/next/dist/docs`), réutilise
+  l'icône déjà en place (`icon.png`, 512×512) et les couleurs de marque
+  de `globals.css`. Vérifié en servant `/manifest.webmanifest`
+  directement.
+
+Typographie changée à la demande d'Enzo ("cette affreuse typo avec
+empattement light") : Fraunces (serif éditoriale) remplacée par
+**Geomanist**, police fournie par Enzo lui-même (licence perso, fichiers
+`.otf`/webfont reçus en zip). Seuls les poids Regular et Regular-Italic
+étaient fournis — pas de gras. Chargée via `next/font/local` (Geomanist
+n'existe pas sur Google Fonts) plutôt que `next/font/google` — fichiers
+woff2 copiés dans `src/app/fonts/geomanist/`. La variable CSS
+`--font-serif-app` est gardée telle quelle (même raisonnement qu'au
+passage à Fraunces en §6dixies : évite de toucher tous les composants qui
+utilisent déjà `font-serif`), même si Geomanist est une sans géométrique
+et non une serif — la pile de secours `--font-serif-fallback` dans
+`globals.css` a été changée en conséquence (était `ui-serif, Georgia...`,
+devient une pile sans-serif) pour ne pas afficher un empattement pendant
+le chargement de la police. Vérifié : build local propre, `tsc`/`eslint`/
+81 tests passent, `font-family` calculé en direct dans le navigateur
+confirme `displayFont` en tête de pile, et les deux fichiers woff2
+répondent 200 sur le réseau.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

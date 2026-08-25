@@ -9,6 +9,16 @@ export function AccessCodeForm({ galleryId }: { galleryId: string }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      <label className="flex flex-col gap-1 text-xs text-muted">
+        Expiration (optionnel)
+        <input
+          type="date"
+          name="expiresAt"
+          min={new Date().toISOString().slice(0, 10)}
+          className="w-fit rounded-md border border-border bg-paper px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+        />
+      </label>
+
       <button
         type="submit"
         disabled={pending}

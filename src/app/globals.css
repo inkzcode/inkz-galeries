@@ -45,15 +45,19 @@
   --background: var(--color-paper);
   --foreground: var(--color-ink);
 
-  /* Typographie — voir src/app/layout.tsx (next/font/google, Bricolage
-     Grotesque + Plus Jakarta Sans). Ce fichier ne fait plus que consommer
-     les variables `--font-serif-app`/`--font-sans-app` que Next injecte
-     sur <html> ; ne pas les redéfinir ici (conflit de cascade avec
+  /* Typographie — voir src/app/layout.tsx (Geomanist en local +
+     Plus Jakarta Sans via next/font/google). Ce fichier ne fait plus que
+     consommer les variables `--font-serif-app`/`--font-sans-app` que Next
+     injecte sur <html> ; ne pas les redéfinir ici (conflit de cascade avec
      next/font). Piles de secours seulement, utilisées si les polices
-     n'ont pas encore chargé. */
+     n'ont pas encore chargé — Geomanist étant une sans géométrique (pas
+     une vraie serif malgré le nom de la variable, gardé pour ne pas
+     toucher tous les composants), sa pile de secours reste sans-serif
+     elle aussi, pour ne pas afficher un empattement le temps du chargement. */
   --font-sans-fallback:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-serif-fallback: ui-serif, Georgia, "Times New Roman", serif;
+  --font-serif-fallback:
+    ui-sans-serif, "Century Gothic", "Futura", system-ui, sans-serif;
 
   /* Rayons — un peu plus ronds qu'avant pour faire écho aux formes
      bulbeuses du logo, sans tomber dans le style "bulle". */

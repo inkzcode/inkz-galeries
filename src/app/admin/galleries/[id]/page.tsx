@@ -296,6 +296,11 @@ export default async function GalleryDetailPage({
                         ? `Utilisé le ${dateTimeFormatter.format(code.lastUsedAt)}`
                         : "Jamais utilisé"}
                     </span>
+                    <span className={code.expiresAt && code.expiresAt < new Date() ? "text-danger" : ""}>
+                      {code.expiresAt
+                        ? `${code.expiresAt < new Date() ? "Expiré le" : "Expire le"} ${dateTimeFormatter.format(code.expiresAt)}`
+                        : "Sans expiration"}
+                    </span>
                   </li>
                 ))}
               </ul>

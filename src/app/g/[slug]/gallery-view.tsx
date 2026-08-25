@@ -11,7 +11,7 @@ import { summarizeSelection } from "@/lib/domain/selection-summary";
 import { colorForNoteIndex } from "@/lib/domain/note-colors";
 import { WATERMARK_DISCLAIMER } from "@/lib/domain/watermark-policy";
 import type { DrawingPoint, PublicGallery } from "@/lib/services/public-gallery-service";
-import { getRetouchPhilosophy } from "@/lib/content/retouch-philosophy";
+import { RawDisclaimer } from "./raw-disclaimer";
 
 const EASE = [0.2, 0.7, 0.3, 1] as const;
 const grid: Variants = {
@@ -138,6 +138,7 @@ export function GalleryView({
         {gallery.watermarkLevel !== "NONE" && (
           <p className="mt-4 text-xs text-faint">{WATERMARK_DISCLAIMER}</p>
         )}
+        {gallery.retouchPhilosophyEnabled && <RawDisclaimer />}
       </motion.header>
 
       <motion.div
@@ -227,7 +228,6 @@ export function GalleryView({
               onDraftDiscard={handleDraftDiscard}
               onDraftsSaved={handleDraftsSaved}
               tips={{
-                retouchPhilosophy: gallery.retouchPhilosophyEnabled ? getRetouchPhilosophy() : null,
                 selfImageMessage: gallery.selfImageMessagesEnabled ? selfImageMessage : null,
               }}
             />

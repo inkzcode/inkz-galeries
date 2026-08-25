@@ -20,10 +20,12 @@ import type { DraftNote } from "./drawing-overlay";
 //    à chaque fois").
 // 2. Les remarques déjà envoyées restent modifiables ("je veux pouvoir
 //    modifier ce que j'ai mis") — texte seulement, le tracé ne bouge pas.
-// 3. Les conseils (philosophie de retouche / image de soi) sont affichés
-//    tout en haut de CE panneau plutôt que sur l'en-tête de la galerie
-//    ("je voudrais [...] que les conseils [...] se trouvent dans la
-//    fenêtre de droite tout en haut").
+// 3. Le message sur l'image de soi reste affiché tout en haut de CE
+//    panneau ("je voudrais [...] que les conseils [...] se trouvent dans
+//    la fenêtre de droite tout en haut") — la philosophie de retouche,
+//    elle, s'affiche désormais avant la galerie (voir raw-disclaimer.tsx,
+//    2026-08-25) : "au moment d'annoter" (ici) est un moment différent
+//    de "avant de découvrir les photos" (là-bas).
 export function PhotoNotesPanel({
   gallerySlug,
   photoId,
@@ -41,7 +43,7 @@ export function PhotoNotesPanel({
   onDraftMessageChange: (draftId: string, message: string) => void;
   onDraftDiscard: (draftId: string) => void;
   onDraftsSaved: (savedDraftIds: string[]) => void;
-  tips?: { retouchPhilosophy?: string | null; selfImageMessage?: string | null };
+  tips?: { selfImageMessage?: string | null };
 }) {
   const [pending, startTransition] = useTransition();
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
@@ -107,25 +109,30 @@ export function PhotoNotesPanel({
     });
   }
 
-  const hasTips = tips && (tips.retouchPhilosophy || tips.selfImageMessage);
+  const hasTips = tips?.selfImageMessage;
   const isEmpty = notes.length === 0 && drafts.length === 0;
 
   return (
     <div className="flex h-full flex-col text-paper">
       {hasTips && (
         <div className="shrink-0 border-b border-paper/10 bg-paper/5 p-4 text-xs leading-relaxed text-paper/70">
-          {tips!.retouchPhilosophy && <p className="italic">{tips!.retouchPhilosophy}</p>}
-          {tips!.selfImageMessage && (
-            <p className={tips!.retouchPhilosophy ? "mt-2" : undefined}>{tips!.selfImageMessage}</p>
-          )}
+          {tips!.selfImageMessage}
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto p-4">
-        <p className="mb-3 text-xs text-paper/60">
-          Dessinez sur la photo pour entourer un détail — ajoutez-en autant que
-          vous voulez, puis envoyez tout d&apos;un coup.
-        </p>
+        <div className="mb-3 text-xs leading-relaxed text-paper/60">
+          <p className="font-medium text-paper/80">Un détail vous gêne ?</p>
+          <p className="mt-1">
+            Entourez-le directement sur la photo et laissez-moi une petite note : une
+            mèche, un bouton, un pli, une imperfection, un élément du décor…
+          </p>
+          <p className="mt-1">
+            Je peux corriger ou atténuer ces petits détails pendant la retouche. En
+            revanche, je ne modifierai jamais votre morphologie ou les traits qui font
+            de vous vous.
+          </p>
+        </div>
 
         {isEmpty && (
           <p className="text-xs text-paper/40">Aucune remarque sur cette photo pour l&apos;instant.</p>

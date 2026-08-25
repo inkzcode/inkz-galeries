@@ -2297,6 +2297,37 @@ oubli caché).
   client, une confirmation qui se ferme d'un clic distrait n'est pas
   assez pour ça.
 
+## 6duotrigies. Contenu définitif des trois messages client, et clarification de leurs moments (2026-08-25)
+
+Enzo confus sur la différence entre les deux fonctionnalités optionnelles
+("philosophie de retouche" vs "image de soi") — en clarifiant, il a
+fourni le contenu définitif des trois textes client et précisé qu'ils
+correspondent à TROIS MOMENTS distincts, pas juste deux bascules :
+① avant d'entrer dans la galerie (comprendre le RAW, ne pas paniquer),
+② en parcourant les photos (pensées rassurantes qui changent),
+③ au moment d'annoter (comprendre ce qui sera/ne sera pas retouché).
+
+- **① `raw-disclaimer.tsx`** (nouveau) — remplace l'ancien contenu de
+  `lib/content/retouch-philosophy.ts` (supprimé), toujours derrière la
+  même bascule `retouchPhilosophyEnabled`, mais déplacé en tête de
+  galerie (`gallery-view.tsx`) plutôt que dans le panneau de remarques —
+  c'est avant même de commencer à regarder les photos qu'il faut
+  comprendre qu'elles sont encore en RAW, pas au moment d'ouvrir une
+  photo en particulier.
+- **② Bibliothèque "image de soi"** — `seed-trust-messages.ts` réécrit
+  avec les 25 messages définitifs d'Enzo (catégories volontairement
+  abandonnées, "on s'en fout des catégories") ; le script REMPLACE
+  maintenant tout le contenu existant (delete + recreate) au lieu d'un
+  simple upsert, puisque cette liste n'est plus un premier jet à
+  compléter mais un contenu définitif qui remplace l'ancien. Exécuté :
+  25 messages en base. Reste au même endroit qu'avant (haut du panneau
+  de remarques, `photo-notes-panel.tsx`) — inchangé, "en parcourant les
+  photos" correspondait déjà à ce placement.
+- **③ Texte d'annotation** — remplace l'ancien "Astuce : dessinez sur la
+  photo..." dans `photo-notes-panel.tsx`, toujours affiché (pas
+  derrière une bascule — c'est le mode d'emploi de la fonctionnalité de
+  remarque elle-même, pas un contenu optionnel).
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { hasGalleryAccess } from "@/lib/gallery-access/session";
 import { getPublicGalleryBySlug } from "@/lib/services/public-gallery-service";
 import { listDeliverablePhotos } from "@/lib/services/final-delivery-service";
-import { getRandomActiveTrustMessage } from "@/lib/services/trust-message-service";
+import { getActiveTrustMessages } from "@/lib/services/trust-message-service";
 import { AccessForm } from "./access-form";
 import { GalleryView } from "./gallery-view";
 import { WaitingView } from "./waiting-view";
@@ -51,9 +51,7 @@ export default async function PublicGalleryPage({
     return <WaitingView galleryTitle={gallery.title} />;
   }
 
-  const selfImageMessage = gallery.selfImageMessagesEnabled
-    ? await getRandomActiveTrustMessage(gallery.id)
-    : null;
+  const selfImageMessages = gallery.selfImageMessagesEnabled ? await getActiveTrustMessages() : [];
 
-  return <GalleryView gallery={gallery} selfImageMessage={selfImageMessage} />;
+  return <GalleryView gallery={gallery} selfImageMessages={selfImageMessages} />;
 }

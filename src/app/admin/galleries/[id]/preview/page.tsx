@@ -3,7 +3,7 @@ import { verifySession } from "@/lib/auth/dal";
 import { getGalleryById } from "@/lib/services/gallery-service";
 import { getPublicGalleryBySlug } from "@/lib/services/public-gallery-service";
 import { listDeliverablePhotos } from "@/lib/services/final-delivery-service";
-import { getRandomActiveTrustMessage } from "@/lib/services/trust-message-service";
+import { getActiveTrustMessages } from "@/lib/services/trust-message-service";
 import { GalleryView } from "@/app/g/[slug]/gallery-view";
 import { WaitingView } from "@/app/g/[slug]/waiting-view";
 import { DeliveryView } from "@/app/g/[slug]/delivery-view";
@@ -61,10 +61,10 @@ export default async function GalleryClientPreviewPage({
   } else if (WAITING_STATUSES.has(publicGallery.status)) {
     view = <WaitingView galleryTitle={publicGallery.title} />;
   } else {
-    const selfImageMessage = publicGallery.selfImageMessagesEnabled
-      ? await getRandomActiveTrustMessage(publicGallery.id)
-      : null;
-    view = <GalleryView gallery={publicGallery} selfImageMessage={selfImageMessage} />;
+    const selfImageMessages = publicGallery.selfImageMessagesEnabled
+      ? await getActiveTrustMessages()
+      : [];
+    view = <GalleryView gallery={publicGallery} selfImageMessages={selfImageMessages} />;
   }
 
   return (

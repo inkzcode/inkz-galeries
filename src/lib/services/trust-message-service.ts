@@ -1,38 +1,28 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 
-// Un message choisi parmi ceux actifs — affiché sur la galerie client
-// quand Gallery.selfImageMessagesEnabled est activé (voir
-// prisma/seed-trust-messages.ts pour le contenu). `null` si la
-// bibliothèque est vide (galerie créée avant le seed, ou toujours pas
-// exécuté) — l'appelant doit gérer ce cas sans planter.
+// Toute la bibliothèque de messages actifs sur l'image de soi (voir
+// prisma/seed-trust-messages.ts pour le contenu) — affichée sur la
+// galerie client quand Gallery.selfImageMessagesEnabled est activé.
+// Tableau vide si la bibliothèque n'a jamais été peuplée — l'appelant
+// doit gérer ce cas sans planter.
 //
-// Le choix est déterministe (galerie + jour), pas vraiment aléatoire à
-// chaque appel : la page `/g/[slug]` est un Server Component, donc tout
-// rafraîchissement (aperçu admin en direct, revalidation) ré-exécute
-// cette fonction — un vrai tirage aléatoire ferait changer le message
-// visible en pleine lecture (retour d'Enzo, 2026-08-22 : "je ne veux pas
-// que les petits conseils changent toutes les x secondes"). Il tourne
-// quand même naturellement d'une visite à l'autre sur plusieurs jours.
-export async function getRandomActiveTrustMessage(gallerySeed: string): Promise<string | null> {
-  const count = await prisma.trustMessage.count({ where: { active: true } });
-  if (count === 0) return null;
-
-  const dayKey = new Date().toISOString().slice(0, 10);
-  const skip = hashToIndex(`${gallerySeed}:${dayKey}`, count);
-  const [message] = await prisma.trustMessage.findMany({
+// Un SEUL message tiré au hasard côté serveur a été essayé (2026-08-22),
+// puis rendu déterministe par jour pour éviter qu'il ne change en pleine
+// lecture à chaque rafraîchissement de l'aperçu admin. Mais le vrai
+// besoin (retour d'Enzo, 2026-08-25) est différent : le message doit
+// changer À CHAQUE NAVIGATION entre photos (flèches ou clic sur une
+// image), pas par intervalle de temps. Retourner toute la bibliothèque
+// ici et choisir CÔTÉ CLIENT selon la photo ouverte (voir
+// gallery-view.tsx) répond aux deux à la fois : la liste elle-même ne
+// change jamais entre deux rafraîchissements du serveur (rien à
+// re-tirer au hasard), et l'affichage change bien avec la navigation
+// puisqu'il dépend de l'index de la photo, pas du temps.
+export async function getActiveTrustMessages(): Promise<string[]> {
+  const messages = await prisma.trustMessage.findMany({
     where: { active: true },
     select: { body: true },
-    skip,
-    take: 1,
+    orderBy: { createdAt: "asc" },
   });
-  return message?.body ?? null;
-}
-
-function hashToIndex(input: string, count: number): number {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return hash % count;
+  return messages.map((message) => message.body);
 }

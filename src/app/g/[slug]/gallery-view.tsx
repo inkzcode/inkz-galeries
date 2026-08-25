@@ -25,10 +25,10 @@ const tile: Variants = {
 
 export function GalleryView({
   gallery,
-  selfImageMessage,
+  selfImageMessages,
 }: {
   gallery: PublicGallery;
-  selfImageMessage?: string | null;
+  selfImageMessages?: string[];
 }) {
   const [photos, toggleOptimistic] = useOptimistic(
     gallery.photos,
@@ -83,6 +83,17 @@ export function GalleryView({
   const nextColor = openPhoto
     ? colorForNoteIndex(openPhoto.notes.length + drafts.length)
     : colorForNoteIndex(0);
+  // Change avec la navigation (flèches ou clic sur une image), pas avec
+  // le temps (retour d'Enzo, 2026-08-25 : "je veux qu'elle change à
+  // chaque fois qu'on appuie sur les flèches [...] mais aussi à chaque
+  // fois qu'on clique sur une image") — dérivé de l'index de la photo
+  // ouverte, jamais tiré au hasard côté client (revenir sur la même
+  // photo montre toujours le même message, plutôt qu'un vrai hasard qui
+  // pourrait sembler incohérent).
+  const currentSelfImageMessage =
+    selfImageMessages && selfImageMessages.length > 0 && openIndex !== null
+      ? selfImageMessages[openIndex % selfImageMessages.length]
+      : null;
 
   function handleStrokeComplete(points: DrawingPoint[]) {
     if (!openPhoto) return;
@@ -228,7 +239,7 @@ export function GalleryView({
               onDraftDiscard={handleDraftDiscard}
               onDraftsSaved={handleDraftsSaved}
               tips={{
-                selfImageMessage: gallery.selfImageMessagesEnabled ? selfImageMessage : null,
+                selfImageMessage: gallery.selfImageMessagesEnabled ? currentSelfImageMessage : null,
               }}
             />
           )

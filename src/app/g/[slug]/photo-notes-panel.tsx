@@ -35,6 +35,9 @@ export function PhotoNotesPanel({
   onDraftDiscard,
   onDraftsSaved,
   tips,
+  selected,
+  locked,
+  onToggleSelected,
 }: {
   gallerySlug: string;
   photoId: string;
@@ -44,6 +47,14 @@ export function PhotoNotesPanel({
   onDraftDiscard: (draftId: string) => void;
   onDraftsSaved: (savedDraftIds: string[]) => void;
   tips?: { selfImageMessage?: string | null };
+  /** Retour d'Enzo, 2026-08-25 : "je veux [...] pouvoir aussi mettre un
+   * cœur sur la photo [...] et que ça mette à jour [...] la galerie en
+   * mode grille" — même état/action que le cœur de la grille
+   * (gallery-view.tsx), affiché ici en plus pour ne pas avoir à fermer
+   * la photo pour la sélectionner. */
+  selected: boolean;
+  locked: boolean;
+  onToggleSelected: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
@@ -114,11 +125,27 @@ export function PhotoNotesPanel({
 
   return (
     <div className="flex h-full flex-col text-paper">
-      {hasTips && (
-        <div className="shrink-0 border-b border-paper/10 bg-paper/5 p-4 text-xs leading-relaxed text-paper/70">
-          {tips!.selfImageMessage}
+      <div className="shrink-0 border-b border-paper/10 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-paper">Cette photo</span>
+          {!locked && (
+            <button
+              type="button"
+              onClick={onToggleSelected}
+              aria-pressed={selected}
+              aria-label={selected ? "Retirer de la sélection" : "Ajouter à la sélection"}
+              className={`flex h-9 w-9 items-center justify-center rounded-full text-lg transition-colors ${
+                selected ? "bg-accent text-paper" : "bg-paper/10 text-paper hover:bg-paper/20"
+              }`}
+            >
+              {selected ? "♥" : "♡"}
+            </button>
+          )}
         </div>
-      )}
+        {hasTips && (
+          <p className="mt-3 text-xs leading-relaxed text-paper/70">{tips!.selfImageMessage}</p>
+        )}
+      </div>
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-3 text-xs leading-relaxed text-paper/60">

@@ -241,6 +241,9 @@ export function GalleryView({
               tips={{
                 selfImageMessage: gallery.selfImageMessagesEnabled ? currentSelfImageMessage : null,
               }}
+              selected={openPhoto.selected}
+              locked={locked}
+              onToggleSelected={() => handleToggle(openPhoto.id)}
             />
           )
         }

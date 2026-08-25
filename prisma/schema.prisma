@@ -85,6 +85,16 @@ model Gallery {
   coverPhotoId String? @unique
   coverPhoto   Photo?  @relation("GalleryCover", fields: [coverPhotoId], references: [id])
 
+  // Portfolio public (brief §1) — désactivé par défaut, opt-in explicite
+  // par shooting : une galerie est privée sauf activation volontaire ici,
+  // jamais l'inverse. La couverture pointe vers un fichier FINAL (retouché,
+  // sans watermark, voir Photo.finalKey) — jamais une preview client, qui
+  // n'a rien à faire sur une page publique. Voir portfolio-service.ts.
+  portfolioEnabled Boolean @default(false)
+
+  portfolioCoverPhotoId String? @unique
+  portfolioCoverPhoto   Photo?  @relation("GalleryPortfolioCover", fields: [portfolioCoverPhotoId], references: [id])
+
   // Protection des previews
   watermarkLevel WatermarkLevel @default(NONE)
 
@@ -144,6 +154,7 @@ model Photo {
   createdAt DateTime @default(now())
 
   coverOfGallery Gallery? @relation("GalleryCover")
+  portfolioCoverOfGallery Gallery? @relation("GalleryPortfolioCover")
 
   selection SelectionItem?
   notes     PhotoNote[]

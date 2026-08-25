@@ -10,8 +10,10 @@ Fichiers existants :
   `getGalleryById`, `listGalleryPhotos`, `deleteGallery` (définitif),
   `archiveGallery`/`unarchiveGallery` (brief §32 — réversible, purement
   organisationnel, ne touche jamais le stockage objet ; seul un shooting
-  `DELIVERED` peut être archivé, et désarchiver y revient toujours). Reçoit
-  une entrée déjà validée par `lib/domain/gallery-form.ts` et fait les
+  `DELIVERED` peut être archivé, et désarchiver y revient toujours),
+  `setPortfolioCoverPhoto` (brief §1 — refuse toute photo sans `finalKey`,
+  voir `portfolio-service.ts` côté lecture publique). Reçoit une entrée
+  déjà validée par `lib/domain/gallery-form.ts` et fait les
   écritures/lectures Prisma.
 - `import-photo.ts` (Milestone 2) — `importPhoto()` : stocke l'original
   (bucket `originals`), génère une preview watermarkée via
@@ -61,6 +63,11 @@ Fichiers existants :
   `PAYMENT_PENDING → TO_RETOUCH`. Sans ce fichier, une galerie payante
   restait bloquée indéfiniment après confirmation — voir
   PROJECT_CONTEXT.md §6octies point 1.
+- `portfolio-service.ts` — `listPortfolioEntries()` : DTO explicite pour la
+  page publique `/portfolio` (même principe que
+  `public-gallery-service.ts`), un shooting n'y apparaît que si
+  `portfolioEnabled` ET `portfolioCoverPhotoId` sont renseignés — deux
+  gestes admin distincts, voir `gallery-service.ts`.
 
 Pas de tests automatisés sur ce dossier (nécessiterait un mock Prisma) —
 vérifié par la compilation (`tsc`, `next build`) et par un test manuel de

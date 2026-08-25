@@ -83,6 +83,7 @@ export const GalleryFormSchema = z
     retouchPhilosophyEnabled: z.boolean(),
     selfImageMessagesEnabled: z.boolean(),
     beforeAfterEnabled: z.boolean(),
+    portfolioEnabled: z.boolean(),
   })
   .superRefine((data, ctx) => {
     if (

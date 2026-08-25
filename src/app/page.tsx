@@ -190,6 +190,9 @@ export default function Home() {
             <span className="text-sm text-muted">Inkz — galeries clients</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-ink-soft">
+            <Link href="/portfolio" className="transition-colors hover:text-ink">
+              Portfolio
+            </Link>
             <a href="mailto:enzo.ac111@gmail.com" className="transition-colors hover:text-ink">
               enzo.ac111@gmail.com
             </a>

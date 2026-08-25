@@ -25,6 +25,7 @@ function buildGalleryFields(input: GalleryFormInput) {
     retouchPhilosophyEnabled: input.retouchPhilosophyEnabled,
     selfImageMessagesEnabled: input.selfImageMessagesEnabled,
     beforeAfterEnabled: input.beforeAfterEnabled,
+    portfolioEnabled: input.portfolioEnabled,
   };
 }
 
@@ -102,6 +103,35 @@ export async function archiveGallery(galleryId: string): Promise<void> {
       },
     }),
   ]);
+}
+
+// Couverture du portfolio public (brief §1) — DOIT pointer vers un
+// fichier final (retouché, sans watermark) : jamais une preview privée.
+// Le champ `portfolioEnabled` (formulaire de création/édition) et ce
+// choix de couverture sont deux gestes séparés à dessein — la couverture
+// ne peut exister qu'une fois un final importé, bien après la création
+// du shooting.
+export async function setPortfolioCoverPhoto(
+  galleryId: string,
+  photoId: string | null,
+): Promise<void> {
+  if (photoId === null) {
+    await prisma.gallery.update({
+      where: { id: galleryId },
+      data: { portfolioCoverPhotoId: null },
+    });
+    return;
+  }
+
+  const photo = await prisma.photo.findUniqueOrThrow({ where: { id: photoId } });
+  if (photo.galleryId !== galleryId || !photo.finalKey) {
+    throw new Error("Cette photo ne peut pas servir de couverture au portfolio.");
+  }
+
+  await prisma.gallery.update({
+    where: { id: galleryId },
+    data: { portfolioCoverPhotoId: photoId },
+  });
 }
 
 export async function unarchiveGallery(galleryId: string): Promise<void> {

@@ -5,6 +5,7 @@ import { getGalleryById, listGalleryPhotos } from "@/lib/services/gallery-servic
 import { listAccessCodes } from "@/lib/services/access-code-service";
 import { listGalleryPhotoNotes } from "@/lib/services/photo-note-service";
 import { getSelectedPhotos } from "@/lib/services/confirm-selection-service";
+import { listDeliverablePhotos } from "@/lib/services/final-delivery-service";
 import { getStorageAdapter } from "@/lib/storage/client";
 import { GALLERY_STATUS_LABELS } from "@/lib/domain/gallery-status";
 import { calculateAmountDue } from "@/lib/domain/pricing";
@@ -20,6 +21,7 @@ import { RevealSection } from "./reveal-section";
 import { RetouchWorkspace, type RetouchPhoto } from "./retouch-workspace";
 import { DeleteGalleryButton } from "./delete-gallery-button";
 import { ArchiveGalleryButton } from "./archive-gallery-button";
+import { PortfolioCoverPicker } from "./portfolio-cover-picker";
 import { BackLink } from "../../../back-link";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
@@ -64,6 +66,7 @@ export default async function GalleryDetailPage({
     retouchPhilosophyEnabled: gallery.retouchPhilosophyEnabled,
     selfImageMessagesEnabled: gallery.selfImageMessagesEnabled,
     beforeAfterEnabled: gallery.beforeAfterEnabled,
+    portfolioEnabled: gallery.portfolioEnabled,
   };
 
   const boundAction = updateGalleryAction.bind(null, gallery.id);
@@ -81,6 +84,7 @@ export default async function GalleryDetailPage({
   const filenameByPhotoId = new Map(photos.map((photo) => [photo.id, photo.filename]));
 
   const selectedPhotos = await getSelectedPhotos(gallery.id);
+  const finalPhotos = await listDeliverablePhotos(gallery.id);
   const pricing = calculateAmountDue(
     {
       pricingMode: gallery.pricingMode,
@@ -308,6 +312,27 @@ export default async function GalleryDetailPage({
             )}
           </div>
         </details>
+
+        {gallery.portfolioEnabled && finalPhotos.length > 0 && (
+          <details className="rounded-md border border-border">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink">
+              Couverture du portfolio public
+            </summary>
+            <div className="border-t border-border px-4 py-5">
+              <p className="text-xs text-muted">
+                Choisis la photo (retouchée, finale) qui représente ce shooting sur la page
+                publique.
+              </p>
+              <div className="mt-4">
+                <PortfolioCoverPicker
+                  galleryId={gallery.id}
+                  photos={finalPhotos}
+                  currentCoverPhotoId={gallery.portfolioCoverPhotoId}
+                />
+              </div>
+            </div>
+          </details>
+        )}
 
         {otherNotes.length > 0 && (
           <details className="rounded-md border border-border">

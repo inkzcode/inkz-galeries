@@ -16,6 +16,7 @@ function baseInput(overrides: Record<string, unknown> = {}) {
     retouchPhilosophyEnabled: false,
     selfImageMessagesEnabled: false,
     beforeAfterEnabled: false,
+    portfolioEnabled: false,
     ...overrides,
   };
 }
@@ -88,6 +89,7 @@ describe("GalleryFormSchema", () => {
       retouchPhilosophyEnabled: formData.get("retouchPhilosophyEnabled") === "on",
       selfImageMessagesEnabled: formData.get("selfImageMessagesEnabled") === "on",
       beforeAfterEnabled: formData.get("beforeAfterEnabled") === "on",
+      portfolioEnabled: formData.get("portfolioEnabled") === "on",
     });
 
     expect(result.success).toBe(true);

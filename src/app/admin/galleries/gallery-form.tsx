@@ -26,6 +26,7 @@ export type GalleryFormDefaults = {
   retouchPhilosophyEnabled: boolean;
   selfImageMessagesEnabled: boolean;
   beforeAfterEnabled: boolean;
+  portfolioEnabled: boolean;
 };
 
 const EMPTY_DEFAULTS: GalleryFormDefaults = {
@@ -42,6 +43,7 @@ const EMPTY_DEFAULTS: GalleryFormDefaults = {
   retouchPhilosophyEnabled: false,
   selfImageMessagesEnabled: false,
   beforeAfterEnabled: false,
+  portfolioEnabled: false,
 };
 
 const inputClass =
@@ -278,6 +280,23 @@ export function GalleryForm({
                 className="mt-1"
               />
               Montrer des exemples avant/après post-production
+            </label>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-border pt-6">
+            <p className={labelClass}>
+              Portfolio public — indépendant de la galerie privée du client,
+              affiché sur la page publique une fois qu&apos;une photo de
+              couverture aura été choisie (une fois le shooting livré).
+            </p>
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                name="portfolioEnabled"
+                defaultChecked={defaults.portfolioEnabled}
+                className="mt-1"
+              />
+              Inclure ce shooting dans le portfolio public
             </label>
           </div>
         </div>

@@ -2529,6 +2529,75 @@ livré** (nécessiterait une galerie complète jusqu'à `DELIVERED` en base,
 pas montée dans cette session) — à surveiller au premier essai réel
 d'Enzo.
 
+## 6septtrigies. Portfolio public (2026-08-25)
+
+Premier "gros" chantier du backlog attaqué le même jour, choisi par Enzo
+parmi les 5 restants (les autres demandent tous quelque chose de lui
+d'abord : compte Stripe, vraies photos avant/après...). Nécessite une
+vraie migration de schéma — première de la session (les précédentes,
+`AccessCode.expiresAt` et `Gallery.ARCHIVED`, existaient déjà en base).
+
+**Décision de conception, prise avant de coder** : un shooting est privé
+par défaut, jamais l'inverse — publier au portfolio est un geste EXPLICITE
+et volontairement scindé en deux, séparés dans le temps :
+1. `Gallery.portfolioEnabled` (formulaire de création/édition, comme les
+   autres bascules) — l'intention, décidable dès le départ.
+2. `Gallery.portfolioCoverPhotoId` (nouvelle section admin, visible
+   seulement une fois qu'il existe au moins une photo avec `finalKey`) —
+   le choix concret de LA photo qui représente le shooting publiquement.
+   Pointe obligatoirement vers un fichier **final** (retouché, sans
+   watermark) : jamais une preview client, `setPortfolioCoverPhoto()`
+   refuse toute photo sans `finalKey` (`gallery-service.ts`). Un shooting
+   n'apparaît sur `/portfolio` que si LES DEUX conditions sont réunies —
+   activer la case sans choisir de couverture ne publie rien.
+
+Portée volontairement limitée : chaque tuile du portfolio montre
+couverture + titre + description, **pas** de page de détail avec plusieurs
+photos par shooting (ça exigerait un vrai système de sélection curatée
+séparé de la galerie privée du client — hors scope pour cette V1, à
+reconsidérer si Enzo le demande).
+
+**Deux bugs trouvés par la vérification, pas par Enzo :**
+1. `GalleryFormSchema` a un nouveau champ obligatoire
+   (`portfolioEnabled: z.boolean()`) — 3 tests de `gallery-form.test.ts`
+   ont cassé immédiatement (fixtures qui construisaient un objet sans ce
+   champ). Corrigé dans le test, pas dans le schéma — le comportement
+   strict est voulu.
+2. Plus sérieux : `/portfolio` n'a aucune dépendance à une API runtime
+   (`cookies()`, etc.), donc Next tentait de la **pré-générer
+   statiquement au build** — `next build` échouait localement (pas de
+   `STORAGE_*` en local ici), mais le vrai problème aurait survécu même
+   avec de vraies clés : une page statique fige les shootings publiés au
+   moment du build. Un nouveau shooting publié depuis l'admin ne serait
+   apparu qu'au **prochain déploiement**, pas immédiatement — silencieux,
+   aucune erreur, juste une page qui ment. Corrigé avec
+   `export const dynamic = "force-dynamic"` (route segment config
+   classique — vérifié que ce projet n'active PAS Cache Components dans
+   `next.config.ts`, qui aurait supprimé cette option entièrement en
+   Next 16, voir `node_modules/next/dist/docs/.../route-segment-config/
+   index.md`).
+
+**Migration** : `prisma migrate dev` refuse de tourner en non-interactif
+dans cet environnement ("environment is non-interactive"). Contourné avec
+`prisma migrate diff --from-config-datasource --to-schema` (flags Prisma 7,
+différents de la doc générique — voir §4bis) pour générer le SQL, un
+dossier de migration créé à la main au format attendu
+(`YYYYMMDDHHMMSS_nom`), puis `prisma migrate deploy` (non-interactif) pour
+l'appliquer réellement à Neon. Un piège rencontré au passage : la sortie
+de `dotenv` (son propre tip promotionnel, déjà vu et vérifié inoffensif en
+juillet — voir mémoire de session) s'est retrouvée capturée dans le fichier
+`migration.sql` via une redirection stdout naïve — retiré avant
+application, sinon `migrate deploy` aurait échoué sur du SQL invalide.
+
+Vérifié : migration appliquée avec succès contre la vraie base Neon
+(partagée dev/prod, pas de base séparée dans ce projet), `prisma generate`
+relancé, `tsc`/`eslint`/81 tests (après correction)/build de production
+complet tous propres — `/portfolio` apparaît bien en `ƒ` (dynamique) dans
+la sortie du build, pas en `○` (statique). Page vide vérifiée en direct
+dans le navigateur (aucun shooting publié pour l'instant, normal). **Pas
+de shooting réel publié pour tester le rendu avec du contenu** — à faire
+une fois qu'Enzo aura choisi une couverture sur un shooting livré.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

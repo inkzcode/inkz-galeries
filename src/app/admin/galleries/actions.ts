@@ -35,6 +35,7 @@ function parseGalleryFormData(formData: FormData) {
     retouchPhilosophyEnabled: formData.get("retouchPhilosophyEnabled") === "on",
     selfImageMessagesEnabled: formData.get("selfImageMessagesEnabled") === "on",
     beforeAfterEnabled: formData.get("beforeAfterEnabled") === "on",
+    portfolioEnabled: formData.get("portfolioEnabled") === "on",
   });
 }
 

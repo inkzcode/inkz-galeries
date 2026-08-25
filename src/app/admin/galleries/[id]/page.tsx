@@ -19,6 +19,7 @@ import { markPaymentReceivedAction } from "./payment-actions";
 import { RevealSection } from "./reveal-section";
 import { RetouchWorkspace, type RetouchPhoto } from "./retouch-workspace";
 import { DeleteGalleryButton } from "./delete-gallery-button";
+import { ArchiveGalleryButton } from "./archive-gallery-button";
 import { BackLink } from "../../../back-link";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
@@ -345,7 +346,13 @@ export default async function GalleryDetailPage({
           </details>
         )}
 
-        <div className="border-t border-border pt-6">
+        <div className="flex flex-wrap items-center gap-4 border-t border-border pt-6">
+          {(gallery.status === "DELIVERED" || gallery.status === "ARCHIVED") && (
+            <ArchiveGalleryButton
+              galleryId={gallery.id}
+              archived={gallery.status === "ARCHIVED"}
+            />
+          )}
           <DeleteGalleryButton galleryId={gallery.id} />
         </div>
       </div>

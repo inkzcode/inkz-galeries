@@ -6,8 +6,12 @@ et l'accès aux données (Prisma) pour réaliser une action complète.
 Fichiers existants :
 
 - `gallery-service.ts` (Milestone 1) — `createGallery`, `updateGallery`,
-  `listGalleries`, `getGalleryById`, `listGalleryPhotos`. Reçoit une entrée
-  déjà validée par `lib/domain/gallery-form.ts` et fait les
+  `listGalleries` (exclut `ARCHIVED`), `listArchivedGalleries`,
+  `getGalleryById`, `listGalleryPhotos`, `deleteGallery` (définitif),
+  `archiveGallery`/`unarchiveGallery` (brief §32 — réversible, purement
+  organisationnel, ne touche jamais le stockage objet ; seul un shooting
+  `DELIVERED` peut être archivé, et désarchiver y revient toujours). Reçoit
+  une entrée déjà validée par `lib/domain/gallery-form.ts` et fait les
   écritures/lectures Prisma.
 - `import-photo.ts` (Milestone 2) — `importPhoto()` : stocke l'original
   (bucket `originals`), génère une preview watermarkée via

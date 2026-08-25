@@ -1,9 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { verifySession } from "@/lib/auth/dal";
 import { GalleryFormSchema } from "@/lib/domain/gallery-form";
-import { createGallery, updateGallery, deleteGallery, getGalleryById } from "@/lib/services/gallery-service";
+import {
+  createGallery,
+  updateGallery,
+  deleteGallery,
+  getGalleryById,
+  archiveGallery,
+  unarchiveGallery,
+} from "@/lib/services/gallery-service";
 
 export type GalleryFormState =
   | {
@@ -99,4 +107,21 @@ export async function deleteGalleryAction(
 
   await deleteGallery(galleryId);
   redirect("/admin");
+}
+
+// Archivage (brief §32) — purement organisationnel, réversible,
+// contrairement à la suppression. Pas de confirmation lourde : rien n'est
+// perdu (voir gallery-service.ts).
+export async function archiveGalleryAction(galleryId: string): Promise<void> {
+  await verifySession();
+  await archiveGallery(galleryId);
+  revalidatePath(`/admin/galleries/${galleryId}`);
+  revalidatePath("/admin");
+}
+
+export async function unarchiveGalleryAction(galleryId: string): Promise<void> {
+  await verifySession();
+  await unarchiveGallery(galleryId);
+  revalidatePath(`/admin/galleries/${galleryId}`);
+  revalidatePath("/admin");
 }

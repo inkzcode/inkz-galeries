@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { verifySession } from "@/lib/auth/dal";
-import { listGalleries } from "@/lib/services/gallery-service";
+import { listGalleries, listArchivedGalleries } from "@/lib/services/gallery-service";
 import { GalleryList } from "./gallery-list";
 
 export default async function AdminDashboard() {
   await verifySession();
-  const galleries = await listGalleries();
+  const [galleries, archivedGalleries] = await Promise.all([
+    listGalleries(),
+    listArchivedGalleries(),
+  ]);
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
@@ -25,6 +28,20 @@ export default async function AdminDashboard() {
         </p>
       ) : (
         <GalleryList galleries={galleries} />
+      )}
+
+      {/* Archivés (brief §32) — repliés par défaut, hors de la liste
+          principale : c'est tout leur intérêt, désencombrer ce tableau de
+          bord des vieux shootings déjà livrés depuis longtemps. */}
+      {archivedGalleries.length > 0 && (
+        <details className="mt-10 rounded-md border border-border">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink">
+            Archivés ({archivedGalleries.length})
+          </summary>
+          <div className="border-t border-border px-4 py-2">
+            <GalleryList galleries={archivedGalleries} />
+          </div>
+        </details>
       )}
     </main>
   );

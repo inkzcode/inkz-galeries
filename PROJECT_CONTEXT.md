@@ -2452,6 +2452,36 @@ Vérifié : `tsc`/`eslint`/81 tests passent, build de production complet
 bien comme route statique dans la sortie du build, aux côtés des routes
 existantes.
 
+## 6quintrigies. Archivage manuel d'un shooting (2026-08-25)
+
+Suite du backlog, toujours le 2026-08-25 : le statut `ARCHIVED` existait
+en base (§5 du brief) mais était inatteignable — aucune action n'y menait,
+constaté lors de l'audit du §6tertrigies. La décision de conception était
+déjà écrite dans le code avant même de le brancher (voir la dernière note
+de `lib/domain/gallery-status-machine.ts`) : l'archivage est TOUJOURS
+manuel, jamais une transition automatique — cohérent avec §12 de ce
+document ("aucune suppression/archivage automatique").
+
+- `archiveGallery`/`unarchiveGallery` (`gallery-service.ts`) — purement un
+  marqueur de statut + entrée `StatusHistory`, ne touche jamais le
+  stockage objet (contrairement à `deleteGallery`, qui lui supprime
+  vraiment les fichiers B2). Réversible, donc pas de confirmation lourde
+  comme pour la suppression (`ArchiveGalleryButton`, simple bouton qui
+  bascule). Seul un shooting `DELIVERED` peut être archivé, et
+  désarchiver y ramène toujours — c'est le seul état d'où l'archivage
+  part, pas la peine de mémoriser un état antérieur arbitraire.
+- `listGalleries()` exclut maintenant `ARCHIVED` par défaut (nouveau
+  `listArchivedGalleries()` pour les récupérer) — sinon archiver un
+  shooting n'aurait aucun effet visible. Le tableau de bord
+  (`admin/page.tsx`) les affiche dans une section repliée en bas
+  (`<details>`, même pattern que la grille de photos importées et les
+  autres sections repliables de l'admin) : c'est tout l'intérêt de
+  l'archivage, désencombrer la liste principale des vieux shootings
+  livrés depuis longtemps sans les faire disparaître pour de bon.
+
+Vérifié : `tsc`/`eslint`/81 tests passent, build de production complet
+propre.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

@@ -49,20 +49,77 @@ export async function updateGallery(id: string, input: GalleryFormInput) {
   });
 }
 
+const GALLERY_LIST_SELECT = {
+  id: true,
+  slug: true,
+  title: true,
+  clientName: true,
+  status: true,
+  shootingDate: true,
+  createdAt: true,
+  _count: { select: { photos: true } },
+} as const;
+
+// Les archivées sont exclues par défaut (voir `listArchivedGalleries()`) —
+// l'archivage (brief §32) sert justement à désencombrer ce tableau de bord
+// des vieux shootings déjà livrés depuis longtemps.
 export function listGalleries() {
   return prisma.gallery.findMany({
+    where: { status: { not: "ARCHIVED" } },
     orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      clientName: true,
-      status: true,
-      shootingDate: true,
-      createdAt: true,
-      _count: { select: { photos: true } },
-    },
+    select: GALLERY_LIST_SELECT,
   });
+}
+
+export function listArchivedGalleries() {
+  return prisma.gallery.findMany({
+    where: { status: "ARCHIVED" },
+    orderBy: { createdAt: "desc" },
+    select: GALLERY_LIST_SELECT,
+  });
+}
+
+// L'archivage est toujours manuel (voir
+// lib/domain/gallery-status-machine.ts, dernière note) et purement un
+// marqueur d'organisation — n'affecte jamais le stockage objet (§12 de
+// PROJECT_CONTEXT.md : aucune suppression automatique). Réversible,
+// contrairement à la suppression : seul un shooting déjà `DELIVERED` peut
+// être archivé, et on revient toujours à `DELIVERED` en désarchivant —
+// c'est le seul état d'où l'archivage part.
+export async function archiveGallery(galleryId: string): Promise<void> {
+  const gallery = await prisma.gallery.findUniqueOrThrow({ where: { id: galleryId } });
+  if (gallery.status !== "DELIVERED") return;
+
+  await prisma.$transaction([
+    prisma.gallery.update({ where: { id: galleryId }, data: { status: "ARCHIVED" } }),
+    prisma.statusHistory.create({
+      data: {
+        galleryId,
+        fromStatus: gallery.status,
+        toStatus: "ARCHIVED",
+        changedBy: "ADMIN",
+        note: "Archivé manuellement",
+      },
+    }),
+  ]);
+}
+
+export async function unarchiveGallery(galleryId: string): Promise<void> {
+  const gallery = await prisma.gallery.findUniqueOrThrow({ where: { id: galleryId } });
+  if (gallery.status !== "ARCHIVED") return;
+
+  await prisma.$transaction([
+    prisma.gallery.update({ where: { id: galleryId }, data: { status: "DELIVERED" } }),
+    prisma.statusHistory.create({
+      data: {
+        galleryId,
+        fromStatus: gallery.status,
+        toStatus: "DELIVERED",
+        changedBy: "ADMIN",
+        note: "Désarchivé manuellement",
+      },
+    }),
+  ]);
 }
 
 export function getGalleryById(id: string) {

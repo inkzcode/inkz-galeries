@@ -3,19 +3,16 @@
 import { useActionState, useState } from "react";
 import { deleteGalleryAction } from "../actions";
 
+const CONFIRMATION_WORD = "SUPPRIMER";
+
 // Zone dangereuse (retour d'Enzo, 2026-08-25 : "je veux pouvoir
-// supprimer mes shooting si je veux") — repliée par défaut, et retaper
-// le titre exact du shooting pour confirmer plutôt qu'une simple boîte
-// de dialogue : un shooting peut représenter des dizaines de photos et
-// le travail du client à les sélectionner, une confirmation qui se ferme
-// d'un clic distrait n'est pas assez pour ça.
-export function DeleteGalleryButton({
-  galleryId,
-  galleryTitle,
-}: {
-  galleryId: string;
-  galleryTitle: string;
-}) {
+// supprimer mes shooting si je veux") — repliée par défaut. D'abord
+// implémentée avec le titre exact du shooting à retaper, jugé "trop
+// compliqué" par Enzo le jour même ("à la limite demande-moi de marquer
+// ok") — remplacé par un mot fixe court (insensible à la casse), un vrai
+// second geste volontaire sans la charge de retaper un titre au
+// caractère près.
+export function DeleteGalleryButton({ galleryId }: { galleryId: string }) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const boundAction = deleteGalleryAction.bind(null, galleryId);
@@ -38,8 +35,8 @@ export function DeleteGalleryButton({
       <p className="text-sm font-medium text-danger">Supprimer définitivement ce shooting</p>
       <p className="mt-1 text-xs text-ink-soft">
         Toutes les photos, remarques et la sélection du client seront perdues pour
-        toujours — impossible à annuler. Pour confirmer, tapez le titre exact du
-        shooting : <span className="font-medium text-ink">{galleryTitle}</span>
+        toujours — impossible à annuler. Pour confirmer, tapez{" "}
+        <span className="font-medium text-ink">{CONFIRMATION_WORD}</span>
       </p>
       <form action={formAction} className="mt-3 flex flex-wrap items-center gap-2">
         <input
@@ -47,12 +44,12 @@ export function DeleteGalleryButton({
           name="confirmation"
           value={confirmation}
           onChange={(event) => setConfirmation(event.target.value)}
-          placeholder={galleryTitle}
+          placeholder={CONFIRMATION_WORD}
           className="rounded-md border border-border bg-paper px-3 py-1.5 text-sm text-ink outline-none focus:border-danger"
         />
         <button
           type="submit"
-          disabled={pending || confirmation.trim() !== galleryTitle}
+          disabled={pending || confirmation.trim().toUpperCase() !== CONFIRMATION_WORD}
           className="rounded-md bg-danger px-4 py-1.5 text-sm font-medium text-paper transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {pending ? "Suppression…" : "Supprimer définitivement"}

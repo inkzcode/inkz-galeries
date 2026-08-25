@@ -332,7 +332,7 @@ export default async function GalleryDetailPage({
         )}
 
         <div className="border-t border-border pt-6">
-          <DeleteGalleryButton galleryId={gallery.id} galleryTitle={gallery.title} />
+          <DeleteGalleryButton galleryId={gallery.id} />
         </div>
       </div>
     </main>

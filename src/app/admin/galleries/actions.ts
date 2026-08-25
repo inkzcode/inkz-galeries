@@ -71,10 +71,15 @@ export async function updateGalleryAction(
 
 export type DeleteGalleryState = { error?: string } | undefined;
 
-// Suppression définitive — retape le titre exact du shooting pour
-// confirmer (revérifié ici, pas seulement côté client) : au-delà du
-// nombre de photos qu'un shooting peut représenter, une simple boîte de
-// confirmation se ferme d'un clic distrait, retaper le titre non.
+const DELETE_CONFIRMATION_WORD = "SUPPRIMER";
+
+// Suppression définitive — tape un mot fixe pour confirmer (revérifié
+// ici, pas seulement côté client). Retaper le titre exact du shooting
+// était trop pénible en pratique (retour d'Enzo, 2026-08-25 : "je trouve
+// ça trop compliqué [...] à la limite demande-moi de marquer ok") — un
+// mot fixe court reste un vrai second geste volontaire (pas une boîte de
+// dialogue qui se ferme d'un clic distrait), sans la charge de retaper
+// un titre au caractère près.
 export async function deleteGalleryAction(
   galleryId: string,
   _prevState: DeleteGalleryState,
@@ -88,8 +93,8 @@ export async function deleteGalleryAction(
   }
 
   const confirmation = formData.get("confirmation");
-  if (typeof confirmation !== "string" || confirmation.trim() !== gallery.title) {
-    return { error: "Le titre tapé ne correspond pas — suppression annulée." };
+  if (typeof confirmation !== "string" || confirmation.trim().toUpperCase() !== DELETE_CONFIRMATION_WORD) {
+    return { error: `Tapez "${DELETE_CONFIRMATION_WORD}" pour confirmer — suppression annulée.` };
   }
 
   await deleteGallery(galleryId);

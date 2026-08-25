@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/dal";
 import { GalleryFormSchema } from "@/lib/domain/gallery-form";
-import { createGallery, updateGallery } from "@/lib/services/gallery-service";
+import { createGallery, updateGallery, deleteGallery, getGalleryById } from "@/lib/services/gallery-service";
 
 export type GalleryFormState =
   | {
@@ -67,4 +67,31 @@ export async function updateGalleryAction(
 
   await updateGallery(id, validated.data);
   redirect(`/admin/galleries/${id}`);
+}
+
+export type DeleteGalleryState = { error?: string } | undefined;
+
+// Suppression définitive — retape le titre exact du shooting pour
+// confirmer (revérifié ici, pas seulement côté client) : au-delà du
+// nombre de photos qu'un shooting peut représenter, une simple boîte de
+// confirmation se ferme d'un clic distrait, retaper le titre non.
+export async function deleteGalleryAction(
+  galleryId: string,
+  _prevState: DeleteGalleryState,
+  formData: FormData,
+): Promise<DeleteGalleryState> {
+  await verifySession();
+
+  const gallery = await getGalleryById(galleryId);
+  if (!gallery) {
+    return { error: "Shooting introuvable." };
+  }
+
+  const confirmation = formData.get("confirmation");
+  if (typeof confirmation !== "string" || confirmation.trim() !== gallery.title) {
+    return { error: "Le titre tapé ne correspond pas — suppression annulée." };
+  }
+
+  await deleteGallery(galleryId);
+  redirect("/admin");
 }

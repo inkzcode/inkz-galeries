@@ -18,6 +18,7 @@ import { unlockSelectionAction } from "./selection-actions";
 import { markPaymentReceivedAction } from "./payment-actions";
 import { RevealSection } from "./reveal-section";
 import { RetouchWorkspace, type RetouchPhoto } from "./retouch-workspace";
+import { DeleteGalleryButton } from "./delete-gallery-button";
 import { BackLink } from "../../../back-link";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
@@ -329,6 +330,10 @@ export default async function GalleryDetailPage({
             </div>
           </details>
         )}
+
+        <div className="border-t border-border pt-6">
+          <DeleteGalleryButton galleryId={gallery.id} galleryTitle={gallery.title} />
+        </div>
       </div>
     </main>
   );

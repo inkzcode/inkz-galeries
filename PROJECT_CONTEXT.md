@@ -2272,6 +2272,31 @@ navigateur (identifiants d'action recalculés à chaque build) et cassé
 l'import en plein milieu — attendu la confirmation que l'import était
 terminé avant de déployer cette suite.
 
+## 6unetrigies. Suppression d'un shooting (2026-08-25)
+
+Retour d'Enzo : "je veux pouvoir supprimer mes shooting si je veux."
+Fonctionnalité jusqu'ici absente (aucune trace dans le code, pas un
+oubli caché).
+
+- `deleteGallery()` (`gallery-service.ts`) — toutes les tables liées ont
+  `onDelete: Cascade` (`prisma/schema.prisma`), donc un seul
+  `prisma.gallery.delete()` suffit côté base. Le stockage objet n'a
+  aucune notion de cascade : originals/previews/finaux de chaque photo
+  nettoyés explicitement d'abord, au mieux (`.catch()` individuel — un
+  objet orphelin après un échec ponctuel est juste un coût de stockage
+  négligeable, jamais une donnée fantôme dans l'app une fois la ligne
+  Gallery partie).
+- `deleteGalleryAction` (`galleries/actions.ts`) — revérifie la
+  confirmation côté serveur (retaper le titre exact du shooting), pas
+  seulement côté client.
+- `DeleteGalleryButton` (`[id]/delete-gallery-button.tsx`) — repliée par
+  défaut sous la page d'un shooting (jamais depuis la liste, pour éviter
+  un clic accidentel sur le mauvais élément d'une liste) ; confirmation
+  par saisie du titre exact plutôt qu'une simple boîte de dialogue —
+  peut représenter des dizaines de photos et le travail de sélection du
+  client, une confirmation qui se ferme d'un clic distrait n'est pas
+  assez pour ça.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

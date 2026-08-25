@@ -135,28 +135,37 @@ export default async function GalleryDetailPage({
       {photosWithUrl.length === 0 ? (
         <p className="mt-6 text-sm text-muted">Aucune photo importée pour l&apos;instant.</p>
       ) : (
-        <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {photosWithUrl.map((photo) => (
-            <li
-              key={photo.id}
-              className="group overflow-hidden rounded-md border border-border bg-surface transition-shadow hover:shadow-md"
-            >
-              {photo.previewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- URLs de preview signées/locales, non compatibles avec l'optimiseur next/image (voir storage/README.md).
-                <img
-                  src={photo.previewUrl}
-                  alt={photo.filename}
-                  className="aspect-[3/2] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                />
-              ) : (
-                <div className="flex aspect-[3/2] w-full items-center justify-center text-xs text-muted">
-                  Pas d&apos;aperçu
-                </div>
-              )}
-              <p className="truncate px-2 py-1.5 text-xs text-muted">{photo.filename}</p>
-            </li>
-          ))}
-        </ul>
+        <details open className="group mt-6">
+          <summary className="cursor-pointer text-sm font-medium text-ink">
+            {photosWithUrl.length} photo{photosWithUrl.length > 1 ? "s" : ""} importée
+            {photosWithUrl.length > 1 ? "s" : ""}
+            <span className="ml-1 text-xs text-muted group-open:hidden">
+              — cliquez pour afficher
+            </span>
+          </summary>
+          <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {photosWithUrl.map((photo) => (
+              <li
+                key={photo.id}
+                className="group overflow-hidden rounded-md border border-border bg-surface transition-shadow hover:shadow-md"
+              >
+                {photo.previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- URLs de preview signées/locales, non compatibles avec l'optimiseur next/image (voir storage/README.md).
+                  <img
+                    src={photo.previewUrl}
+                    alt={photo.filename}
+                    className="aspect-[3/2] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  />
+                ) : (
+                  <div className="flex aspect-[3/2] w-full items-center justify-center text-xs text-muted">
+                    Pas d&apos;aperçu
+                  </div>
+                )}
+                <p className="truncate px-2 py-1.5 text-xs text-muted">{photo.filename}</p>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </>
   );

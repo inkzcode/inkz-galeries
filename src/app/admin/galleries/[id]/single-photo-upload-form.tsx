@@ -19,15 +19,16 @@ export function SinglePhotoUploadForm({ galleryId }: { galleryId: string }) {
     event.preventDefault();
     const original = originalRef.current?.files?.[0];
     const previewSource = previewSourceRef.current?.files?.[0];
-    if (!original || !previewSource) {
-      setError("Les deux fichiers sont requis.");
+    if (!original) {
+      setError("Le fichier original est requis.");
       return;
     }
 
     setError(null);
     setPending(true);
     startTransition(async () => {
-      const result = await uploadPhotosDirectly(galleryId, [original], [previewSource], () => {});
+      const previews = previewSource ? [previewSource] : [];
+      const result = await uploadPhotosDirectly(galleryId, [original], previews, () => {});
       setPending(false);
       if (result.imported === 0) {
         setError(result.unmatched[0]?.reason ?? "L'import a échoué.");
@@ -48,14 +49,13 @@ export function SinglePhotoUploadForm({ galleryId }: { galleryId: string }) {
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="previewSource" className="text-sm text-ink-soft">
-          Aperçu JPEG exporté (Lightroom ou équivalent)
+          Aperçu JPEG en secours (facultatif — un RAW en a déjà un généré automatiquement)
         </label>
         <input
           id="previewSource"
           ref={previewSourceRef}
           type="file"
           accept="image/jpeg"
-          required
           className="text-sm"
         />
       </div>

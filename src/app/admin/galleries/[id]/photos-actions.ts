@@ -6,6 +6,9 @@ import { verifySession } from "@/lib/auth/dal";
 import { getStorageAdapter } from "@/lib/storage/client";
 import { buildPhotoObjectKey } from "@/lib/storage/keys";
 import { importPhoto } from "@/lib/services/import-photo";
+import { extractEmbeddedRawPreview } from "@/lib/imaging/extract-raw-preview";
+
+const DISPLAYABLE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
 
 // Import de photos originales en dépôt DIRECT vers le stockage (retour
 // d'Enzo, 2026-08-24 : import d'un shooting de 119 photos en échec sur
@@ -76,6 +79,7 @@ export async function finalizeOriginalImportAction(
   await verifySession();
 
   const extension = extensionOf(filename) || "raw";
+  const isDisplayable = DISPLAYABLE_EXTENSIONS.has(extension);
   const storage = getStorageAdapter();
   const originalKey = buildPhotoObjectKey({ galleryId, photoId, kind: "original", extension });
   const previewSourceKey = hasPreviewSource
@@ -83,14 +87,41 @@ export async function finalizeOriginalImportAction(
     : null;
 
   let previewSourceBuffer: Buffer;
-  try {
-    previewSourceBuffer = await storage.getObjectBuffer(
-      "originals",
-      previewSourceKey ?? originalKey,
-    );
-  } catch (error) {
-    console.error("Échec de lecture du fichier envoyé :", error);
-    return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
+  if (previewSourceKey) {
+    // Aperçu JPEG fourni manuellement (retour d'Enzo) — prioritaire sur
+    // l'extraction automatique, utile si celle-ci donne un mauvais résultat.
+    try {
+      previewSourceBuffer = await storage.getObjectBuffer("originals", previewSourceKey);
+    } catch (error) {
+      console.error("Échec de lecture du fichier envoyé :", error);
+      return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
+    }
+  } else if (isDisplayable) {
+    try {
+      previewSourceBuffer = await storage.getObjectBuffer("originals", originalKey);
+    } catch (error) {
+      console.error("Échec de lecture du fichier envoyé :", error);
+      return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
+    }
+  } else {
+    // RAW sans aperçu fourni : extraction automatique de l'aperçu JPEG
+    // intégré par l'appareil photo (retour d'Enzo, 2026-08-25 : "je veux
+    // pas avoir à le faire [...] avant [la retouche] ça doit être en RAW").
+    let rawBuffer: Buffer;
+    try {
+      rawBuffer = await storage.getObjectBuffer("originals", originalKey);
+    } catch (error) {
+      console.error("Échec de lecture du fichier envoyé :", error);
+      return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
+    }
+    const extracted = await extractEmbeddedRawPreview(rawBuffer, extension);
+    if (!extracted) {
+      return {
+        error:
+          "Aucun aperçu intégré trouvé dans ce RAW — fournissez un aperçu JPEG manuellement (zone dédiée).",
+      };
+    }
+    previewSourceBuffer = extracted;
   }
 
   try {

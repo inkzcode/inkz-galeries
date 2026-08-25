@@ -2047,6 +2047,75 @@ plus haut dans ce fichier pour les fichiers de service). `tsc`/`eslint`/
 Enzo — conseillé de retester d'abord avec 2-3 photos avant de relancer
 les 119 d'un coup.**
 
+## 6trigies. Premier vrai test Enzo, deux bugs de plus + extraction automatique d'aperçu RAW (2026-08-25)
+
+**1. CORS manquant sur Backblaze** — premier essai réel après
+§6novovicies : échec identique, aucune piste depuis les logs (Enzo sur
+iPad, pas d'outils développeur accessibles facilement). Cause : un
+bucket S3/B2 refuse par défaut un dépôt direct depuis un autre domaine
+(politique du navigateur, pas de B2) — jamais configuré puisque jamais
+eu besoin d'upload direct navigateur avant §6novovicies. Corrigé
+directement via l'API S3 compatible (`PutBucketCorsCommand`, script
+jetable avec les clés déjà en main, comme pour le test de connectivité
+initial) sur les deux buckets — actif immédiatement, aucun redéploiement
+nécessaire pour ce genre de changement (config du bucket, pas du code).
+
+**2. Erreurs génériques inutilisables sur iPad** — corrigé en même temps :
+chaque échec d'import affiche maintenant la vraie raison (message HTTP,
+erreur d'action serveur, exception) directement dans l'interface, plutôt
+qu'un unique message générique. Nécessaire pour diagnostiquer QUOI QUE CE
+SOIT sans les outils développeur — a immédiatement servi à identifier le
+point 3 ci-dessous sans capture de console.
+
+**3. RAW sans aperçu manuel refusé** ("Aucun aperçu JPEG associé
+trouvé") — comportement voulu à l'origine (§6sexvicies/§6septvicies :
+"pas de décodage RAW côté serveur"), mais Enzo refuse catégoriquement
+d'exporter un JPEG par RAW avant l'import : "je veux pas avoir à le
+faire [...] avant [la retouche] ça doit être en RAW". Repoussé une
+alternative "export groupé en un clic dans Lightroom" (toujours refusée)
+avant d'implémenter une vraie extraction automatique :
+- Presque tous les RAW (CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2...)
+  contiennent un aperçu JPEG intégré par l'appareil photo — extrait
+  maintenant automatiquement via `exiftool-vendored`
+  (`lib/imaging/extract-raw-preview.ts`), qui vendors un binaire
+  ExifTool par plateforme (mécanisme npm `optionalDependencies` — même
+  approche que `sharp`/`esbuild`, déjà éprouvée sur Vercel dans ce
+  projet). Écartées avant ça : `exifr` (pure JS mais confirmé, README à
+  l'appui, ne supporte AUCUN format RAW caméra) et `extractd` (dépend
+  aussi d'un process externe, sans gagner en couverture de format —
+  CR3 non confirmé).
+- `finalizeOriginalImportAction` (`photos-actions.ts`) : pour un RAW,
+  utilise l'aperçu manuel s'il est fourni (prioritaire, reste possible en
+  secours si l'extraction automatique déçoit sur une photo), sinon tente
+  l'extraction automatique, sinon erreur explicite (pas de silence).
+  `direct-photo-upload.ts` ne bloque plus l'envoi d'un RAW sans aperçu
+  manuel associé — c'est désormais au serveur de décider.
+- Instance ExifTool dédiée et explicitement arrêtée (`end()`) par appel
+  plutôt que le singleton partagé du module — en serverless, un process
+  persistant dont la fonction ne sait jamais s'il survivra jusqu'au
+  prochain appel est plus risqué qu'un démarrage/arrêt à chaque fois.
+  Fichiers temporaires dans `os.tmpdir()` (seul répertoire inscriptible
+  sur Vercel), toujours nettoyés (`finally`).
+- **Avertissement de build corrigé au passage** : `os.tmpdir()` est un
+  chemin dynamique non analysable statiquement par Turbopack, qui
+  inclut alors TOUT le projet dans le paquet déployé "par précaution" —
+  annotation `/*turbopackIgnore: true*/` ajoutée (solution suggérée par
+  le message d'avertissement lui-même), sûre ici puisque ce chemin ne
+  touche jamais aux fichiers du projet.
+
+**Risque assumé, explicitement signalé à Enzo avant d'implémenter** :
+`exiftool-vendored` dépend d'un binaire externe vendu par plateforme, pas
+du JavaScript pur — après plusieurs surprises "marche en local, pas sur
+Vercel" cette session (vérification de types, scripts npm bloqués, CORS),
+il n'y a aucune garantie que ça fonctionne réellement en serverless sans
+un vrai test sur la plateforme cible, impossible à faire moi-même
+(toujours pas de session admin locale ni d'accès aux outils développeur
+d'Enzo). Sanity-check fait : le binaire s'exécute correctement en local
+(`exiftool.version()` répond), mais **aucun vrai fichier RAW disponible
+pour tester `extractJpgFromRaw` de bout en bout** avant qu'Enzo ne le
+fasse en conditions réelles. `tsc`/`eslint`/`vitest`/`next build` passent
+tous, aucun avertissement au build.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

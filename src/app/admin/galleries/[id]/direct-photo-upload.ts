@@ -27,6 +27,10 @@ async function uploadOnePhoto(
   const extension = extensionOf(original.name) || "raw";
   const isDisplayable = DISPLAYABLE_EXTENSIONS.has(extension);
 
+  // Pour un RAW, un aperçu JPEG déposé manuellement (matché par nom de
+  // fichier) est prioritaire s'il existe, mais optionnel : à défaut, le
+  // serveur tente d'extraire l'aperçu intégré au RAW lui-même (retour
+  // d'Enzo, 2026-08-25 — voir finalizeOriginalImportAction).
   let matchedPreview: File | undefined;
   if (!isDisplayable) {
     const matchedName = matchFilename(
@@ -36,9 +40,6 @@ async function uploadOnePhoto(
     matchedPreview = matchedName
       ? previewCandidates.find((file) => file.name === matchedName)
       : undefined;
-    if (!matchedPreview) {
-      return { ok: false, filename: original.name, reason: "Aucun aperçu JPEG associé trouvé." };
-    }
   }
 
   try {

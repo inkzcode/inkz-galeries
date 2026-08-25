@@ -14,9 +14,13 @@ function extensionOf(filename: string): string {
 // importer mes photos n'est pas logique et trop difficile à comprendre".
 // L'ancien formulaire demandait deux fichiers par photo, une par une,
 // sans expliquer pourquoi. Ici : on dépose tout le shooting d'un coup ;
-// les JPEG/PNG servent directement d'aperçu (rien de plus à faire), seuls
-// les RAW ont besoin d'un aperçu à côté, associé automatiquement par nom
-// de fichier (voir lib/domain/filename-match.ts).
+// les JPEG/PNG servent directement d'aperçu (rien de plus à faire). Pour
+// les RAW, le serveur extrait automatiquement l'aperçu intégré par
+// l'appareil photo (retour d'Enzo, 2026-08-25 : "avant [la retouche] ça
+// doit être en RAW [...] je veux pas avoir à le faire") — la zone
+// d'aperçus JPEG ci-dessous reste disponible en secours, associée
+// automatiquement par nom de fichier, si l'extraction automatique ne
+// donne pas un bon résultat pour certaines photos.
 export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
   const [, startTransition] = useTransition();
   const [pending, setPending] = useState(false);
@@ -143,10 +147,14 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
           }`}
         >
           <p className="text-sm font-medium text-ink">
-            Aperçus JPEG des fichiers RAW ({previews.length} déposé
+            Aperçus JPEG en secours ({previews.length} déposé
             {previews.length > 1 ? "s" : ""})
           </p>
-          <p className="text-xs text-muted">Exportés depuis Lightroom ou équivalent.</p>
+          <p className="text-xs text-muted">
+            Facultatif — les RAW ont déjà un aperçu généré automatiquement. À utiliser
+            seulement si le résultat automatique ne convient pas pour certaines photos
+            (exportés depuis Lightroom ou équivalent).
+          </p>
           <input
             ref={previewsInputRef}
             type="file"

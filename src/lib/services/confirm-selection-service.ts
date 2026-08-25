@@ -6,6 +6,7 @@ import {
   onReadyForRetouch,
   onSelectionConfirmed,
 } from "@/lib/domain/gallery-status-machine";
+import { sendSelectionReceivedEmail } from "@/lib/email/send-selection-received-email";
 
 // Verrouille la sélection d'une galerie et fait avancer son statut (brief
 // §15 : "sélection → récapitulatif → confirmation → paiement si
@@ -62,6 +63,22 @@ export async function confirmSelection(
       },
     }),
   ]);
+
+  // Notifie Enzo (pas le client — c'est lui qui doit agir ensuite), brief
+  // §30. Un seul compte admin dans ce projet (voir AdminUser.email) : pas
+  // de nouvelle variable d'environnement à configurer. Ne bloque jamais
+  // la confirmation si l'envoi échoue (voir lib/email/shared.ts).
+  const admin = await prisma.adminUser.findFirst({ select: { email: true } });
+  if (admin) {
+    await sendSelectionReceivedEmail({
+      adminEmail: admin.email,
+      galleryId: gallery.id,
+      galleryTitle: gallery.title,
+      selectedCount: gallery._count.photos,
+      amountDueCents: pricing.amountDueCents,
+      currency: pricing.currency,
+    });
+  }
 
   return { pricing };
 }

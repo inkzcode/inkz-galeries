@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { calculateAmountDue } from "@/lib/domain/pricing";
 import { onReadyForRetouch } from "@/lib/domain/gallery-status-machine";
+import { sendPaymentReceivedEmail } from "@/lib/email/send-payment-received-email";
 
 // Pas d'intégration Stripe réelle (brief §16 — explicitement hors
 // périmètre pour l'instant). Ce que ce fichier fait : enregistrer qu'Enzo
@@ -49,6 +50,19 @@ export async function markPaymentReceived(galleryId: string): Promise<void> {
       },
     }),
   ]);
+
+  // Notifie le client (brief §30) — sans adresse renseignée, ne fait
+  // simplement rien (champ facultatif). Ne bloque jamais le marquage du
+  // paiement si l'envoi échoue (voir lib/email/shared.ts).
+  if (gallery.clientEmail) {
+    await sendPaymentReceivedEmail({
+      clientEmail: gallery.clientEmail,
+      galleryTitle: gallery.title,
+      gallerySlug: gallery.slug,
+      amountCents: pricing.amountDueCents,
+      currency: pricing.currency,
+    });
+  }
 }
 
 export function listPayments(galleryId: string) {

@@ -2384,6 +2384,52 @@ le chargement de la police. Vérifié : build local propre, `tsc`/`eslint`/
 confirme `displayFont` en tête de pile, et les deux fichiers woff2
 répondent 200 sur le réseau.
 
+Premier lot poussé en prod sans que le lien déployé ne bouge (typo
+toujours Fraunces côté client) — rappel appris ici : un changement n'est
+"fait" pour Enzo que quand `git push` a réellement eu lieu, pas quand le
+code est juste committé localement. À partir de maintenant, chaque
+livraison de ce chantier se termine par un push (avec confirmation
+explicite d'Enzo avant, comme convenu), pas seulement par les tests
+locaux.
+
+## 6quatertrigies. Les 3 emails automatiques restants (2026-08-25)
+
+Suite du backlog du §6tertrigies, toujours le 2026-08-25 : les 3 emails
+manquants du brief §30 (sur 4 — "photos prêtes" existait déjà depuis le
+2026-08-22). Question ouverte identifiée dans l'audit — "qui reçoit
+quoi ?" — tranchée ainsi :
+
+- **Galerie disponible** → **client**. Déclenché dans
+  `access-code-actions.ts` quand Enzo génère un code d'accès pour une
+  galerie qui a une adresse client renseignée. Contient le code en clair
+  — remplace l'envoi manuel qu'il faisait jusqu'ici (SMS/message hors
+  app). Le code reste aussi affiché dans l'admin, au cas où l'email
+  n'arrive pas.
+- **Sélection reçue** → **Enzo**, pas le client. C'est lui qui doit agir
+  ensuite (retoucher, ou attendre le paiement) — le client, lui, sait déjà
+  qu'il vient de confirmer. Déclenché dans `confirm-selection-service.ts`
+  à la fin de `confirmSelection()`. Adresse récupérée via
+  `AdminUser.email` (un seul compte admin dans ce projet) — pas de
+  nouvelle variable d'environnement à ajouter.
+- **Paiement reçu** → **client**. Déclenché dans `payment-service.ts` à la
+  fin de `markPaymentReceived()`, confirme le montant et que la retouche
+  démarre.
+
+Les 4 emails partageaient déjà la même structure (dégradation sans clé
+Resend, bouton couleur de marque, `escapeHtml`) mais chacun la
+réimplémentait — dupliqué 4 fois, ça commençait à valoir la peine
+d'factoriser. Extrait dans `lib/email/shared.ts`
+(`sendTransactionalEmail()`, `escapeHtml()`, `buildEmailHtml()`) ;
+`send-gallery-ready-email.ts` (le premier, 2026-08-22) réécrit pour
+utiliser le même socle plutôt que de laisser 2 styles cohabiter. Nouveau
+`lib/email/README.md` (le dossier n'en avait pas encore, contrairement
+aux autres dossiers de `lib/`) recense les 4 emails et leur déclencheur.
+
+Vérifié : `tsc`/`eslint`/81 tests passent, build de production complet
+(`rm -rf .next && next build`) propre — `/manifest.webmanifest` apparaît
+bien comme route statique dans la sortie du build, aux côtés des routes
+existantes.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

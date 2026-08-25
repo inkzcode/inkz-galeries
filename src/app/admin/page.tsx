@@ -13,13 +13,21 @@ export default async function AdminDashboard() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-serif text-3xl text-ink">Shootings</h1>
-        <Link
-          href="/admin/galleries/new"
-          className="inline-flex items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-paper shadow-sm hover:-translate-y-0.5 hover:shadow-md"
-        >
-          Nouveau shooting
-        </Link>
+        <h1 className="font-serif text-3xl font-bold text-ink">Shootings</h1>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/portfolio"
+            className="inline-flex items-center justify-center rounded-md border border-border px-5 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:border-ink hover:text-ink"
+          >
+            Portfolio
+          </Link>
+          <Link
+            href="/admin/galleries/new"
+            className="inline-flex items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-paper shadow-sm hover:-translate-y-0.5 hover:shadow-md"
+          >
+            Nouveau shooting
+          </Link>
+        </div>
       </div>
 
       {galleries.length === 0 ? (

@@ -79,7 +79,7 @@ export function ConfirmSelectionBar({
             className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-lg bg-paper p-6 sm:rounded-lg"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="font-serif text-xl text-ink">Récapitulatif</h2>
+            <h2 className="font-serif text-xl font-semibold text-ink">Récapitulatif</h2>
             <p className="mt-2 text-sm text-ink-soft">{summary.label}</p>
             {summary.pricing.requiresPayment && (
               <p className="mt-1 text-sm text-ink-soft">

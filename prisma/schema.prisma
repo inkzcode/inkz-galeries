@@ -318,6 +318,24 @@ model BeforeAfterExample {
   @@index([galleryId])
 }
 
+// Élément de portfolio autonome (retour d'Enzo, 2026-08-25 : "je veux
+// pouvoir ajouter des trucs dans mon portfolio sans passer par inkz.fr ni
+// par un shooting quelconque") — délibérément SANS relation vers Gallery,
+// contrairement à Gallery.portfolioCoverPhotoId (voir plus haut) qui, lui,
+// vient toujours d'un vrai shooting client. Les deux sources sont
+// fusionnées côté lecture publique (portfolio-service.ts).
+model PortfolioItem {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  category    String? // libre, comme Gallery.shootingType
+
+  imageKey String // clé objet dans le bucket "previews", préfixe "portfolio/"
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
 enum NotificationType {
   GALLERY_READY
   SELECTION_CONFIRMED

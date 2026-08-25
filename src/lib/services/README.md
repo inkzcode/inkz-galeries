@@ -65,9 +65,17 @@ Fichiers existants :
   PROJECT_CONTEXT.md §6octies point 1.
 - `portfolio-service.ts` — `listPortfolioEntries()` : DTO explicite pour la
   page publique `/portfolio` (même principe que
-  `public-gallery-service.ts`), un shooting n'y apparaît que si
-  `portfolioEnabled` ET `portfolioCoverPhotoId` sont renseignés — deux
-  gestes admin distincts, voir `gallery-service.ts`.
+  `public-gallery-service.ts`), fusionne DEUX sources triées ensemble par
+  date — les shootings publiés (`portfolioEnabled` ET
+  `portfolioCoverPhotoId` renseignés, deux gestes admin distincts, voir
+  `gallery-service.ts`) et les éléments autonomes
+  (`portfolio-item-service.ts`).
+- `portfolio-item-service.ts` — `listPortfolioItemsAdmin`,
+  `createPortfolioItem`, `deletePortfolioItem` : éléments de portfolio
+  SANS shooting associé (brief §1, retour d'Enzo 2026-08-25 : "sans
+  passer par [...] un shooting quelconque"). Toujours déjà finalisés,
+  stockés tels quels dans le bucket "previews" sous le préfixe
+  `portfolio/`.
 
 Pas de tests automatisés sur ce dossier (nécessiterait un mock Prisma) —
 vérifié par la compilation (`tsc`, `next build`) et par un test manuel de

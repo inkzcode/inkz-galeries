@@ -17,8 +17,8 @@ export default function NotFound() {
         className="flex flex-col items-center gap-4"
       >
         <BrandDots />
-        <p className="font-serif text-6xl text-ink">404</p>
-        <h1 className="font-serif text-2xl text-ink">Page introuvable</h1>
+        <p className="font-serif text-6xl font-bold text-ink">404</p>
+        <h1 className="font-serif text-2xl font-semibold text-ink">Page introuvable</h1>
         <p className="text-ink-soft">
           Ce lien n&apos;existe pas ou n&apos;existe plus — vérifiez l&apos;adresse
           ou revenez à l&apos;accueil.

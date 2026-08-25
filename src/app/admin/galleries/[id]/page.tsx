@@ -179,7 +179,7 @@ export default async function GalleryDetailPage({
     <main className="mx-auto max-w-4xl px-6 py-12">
       <BackLink href="/admin" label="Retour aux shootings" />
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-3xl text-ink">{gallery.title}</h1>
+        <h1 className="font-serif text-3xl font-bold text-ink">{gallery.title}</h1>
         <span className="rounded-full border border-border px-3 py-1 text-sm text-muted">
           {GALLERY_STATUS_LABELS[gallery.status]}
         </span>

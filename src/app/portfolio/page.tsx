@@ -26,7 +26,7 @@ export default async function PortfolioPage() {
     <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
       <BackLink href="/" label="Accueil" />
 
-      <h1 className="mt-4 font-serif text-3xl text-ink sm:text-4xl">Portfolio</h1>
+      <h1 className="mt-4 font-serif text-3xl font-bold text-ink sm:text-4xl">Portfolio</h1>
       <p className="mt-2 max-w-xl text-ink-soft">
         Une sélection de séances passées, classées par shooting.
       </p>

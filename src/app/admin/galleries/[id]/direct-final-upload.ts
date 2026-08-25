@@ -1,5 +1,5 @@
 import { matchFilename } from "@/lib/domain/filename-match";
-import { putDirect, runWithConcurrency } from "./direct-upload-helpers";
+import { putDirect, runWithConcurrency } from "@/lib/upload/direct-upload";
 import { prepareFinalUploadAction, finalizeFinalImportAction } from "./final-upload-actions";
 
 // Orchestration client du dépôt direct d'un fichier final retouché (voir

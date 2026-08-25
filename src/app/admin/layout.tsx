@@ -30,7 +30,7 @@ export default async function AdminLayout({
         <header className="border-b border-border">
           <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
-              <Link href="/admin" className="flex items-center gap-2 font-serif text-lg text-ink">
+              <Link href="/admin" className="flex items-center gap-2 font-serif text-lg font-semibold text-ink">
                 <BrandDots size={8} />
                 Espace photographe
               </Link>

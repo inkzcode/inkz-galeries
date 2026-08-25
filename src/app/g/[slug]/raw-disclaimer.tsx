@@ -8,7 +8,7 @@
 export function RawDisclaimer() {
   return (
     <div className="mt-4 max-w-xl border-l-2 border-accent-tint pl-4 text-sm leading-relaxed text-ink-soft">
-      <p className="font-serif text-base text-ink">Avant de découvrir vos photos</p>
+      <p className="font-serif text-base font-medium text-ink">Avant de découvrir vos photos</p>
       <p className="mt-2">
         Les images que vous allez voir ne sont <strong className="text-ink">pas encore terminées</strong>.
       </p>

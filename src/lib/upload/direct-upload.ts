@@ -1,7 +1,10 @@
-// Petits utilitaires partagés par direct-photo-upload.ts (originaux) et
-// direct-final-upload.ts (finaux retouchés) — même besoin dans les deux
-// cas : déposer un fichier directement sur une URL signée, en limitant
-// le nombre d'envois simultanés.
+// Utilitaires partagés par tout flux d'envoi direct navigateur → stockage
+// (photos de shooting, finaux retouchés, éléments de portfolio autonomes)
+// — même besoin partout : déposer un fichier sur une URL signée, en
+// limitant le nombre d'envois simultanés. Déplacé le 2026-08-25 depuis
+// admin/galleries/[id]/direct-upload-helpers.ts (n'était utilisé que par
+// des fichiers de ce dossier jusqu'ici, mais rien ne l'y attache
+// vraiment) pour être réutilisable depuis admin/portfolio aussi.
 
 // `contentType` DOIT être exactement la même valeur que celle passée au
 // moment de générer l'URL signée (voir *UploadAction) — une URL S3/B2

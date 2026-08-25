@@ -77,7 +77,7 @@ export function RetouchWorkspace({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-soft">
-          <span className="font-serif text-2xl text-ink">{doneCount}</span> sur {total}{" "}
+          <span className="font-serif text-2xl font-bold text-ink">{doneCount}</span> sur {total}{" "}
           final{total > 1 ? "aux" : ""} importé{doneCount > 1 ? "s" : ""}
         </p>
         <div className="h-1.5 w-40 overflow-hidden rounded-full bg-border">

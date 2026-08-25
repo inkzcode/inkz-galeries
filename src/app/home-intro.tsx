@@ -74,7 +74,7 @@ export function HomeIntro() {
             </motion.div>
 
             <motion.h1
-              className="font-serif text-4xl leading-tight text-ink sm:text-5xl"
+              className="font-serif text-4xl leading-tight font-bold text-ink sm:text-5xl"
               variants={headlineContainer}
               initial="hidden"
               animate="show"
@@ -169,10 +169,10 @@ export function HomeIntro() {
                 transition={{ duration: 0.5, delay: i * 0.12 }}
                 whileHover={{ y: -6, boxShadow: "0 12px 24px -8px rgba(20,20,20,0.15)" }}
               >
-                <span className="font-serif text-3xl text-accent">
+                <span className="font-serif text-3xl font-bold text-accent">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h2 className="mt-3 font-serif text-lg text-ink">{step.title}</h2>
+                <h2 className="mt-3 font-serif text-lg font-semibold text-ink">{step.title}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.text}</p>
               </motion.div>
             ))}

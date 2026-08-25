@@ -25,7 +25,7 @@ export default async function Home() {
       <section className="relative border-t border-border px-6 py-20 sm:px-10">
         <div className="mx-auto max-w-6xl">
           <p className="text-sm tracking-wide text-muted uppercase">Portfolio</p>
-          <h2 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">Séances passées</h2>
+          <h2 className="mt-2 font-serif text-3xl font-bold text-ink sm:text-4xl">Séances passées</h2>
 
           {portfolioEntries.length === 0 ? (
             <p className="mt-10 text-sm text-muted">

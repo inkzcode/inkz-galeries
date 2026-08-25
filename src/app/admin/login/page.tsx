@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
             Espace photographe
           </p>
         </div>
-        <h1 className="font-serif text-3xl text-ink">Connexion</h1>
+        <h1 className="font-serif text-3xl font-bold text-ink">Connexion</h1>
       </motion.div>
       <motion.div
         initial={{ opacity: 0, y: 16, scale: 0.98 }}

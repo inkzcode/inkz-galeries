@@ -21,7 +21,7 @@ export default function GalleryAccess() {
             Accès galerie
           </p>
         </div>
-        <h1 className="font-serif text-3xl text-ink">Retrouvez votre galerie</h1>
+        <h1 className="font-serif text-3xl font-bold text-ink">Retrouvez votre galerie</h1>
         <p className="text-ink-soft">
           Saisissez le code d&apos;accès transmis par votre photographe —
           aucun compte à créer.

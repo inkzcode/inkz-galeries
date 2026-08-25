@@ -18,7 +18,7 @@ export default function AdminError({
       <p className="text-sm tracking-wide text-muted uppercase">
         Espace photographe
       </p>
-      <h1 className="font-serif text-3xl text-ink">Une erreur est survenue</h1>
+      <h1 className="font-serif text-3xl font-bold text-ink">Une erreur est survenue</h1>
       <p className="text-ink-soft">
         La base de données n&apos;a pas répondu à temps — sur l&apos;offre
         gratuite Neon, le compute se met en veille après une période

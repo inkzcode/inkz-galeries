@@ -9,7 +9,7 @@ export default async function NewGalleryPage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
       <BackLink href="/admin" label="Retour aux shootings" />
-      <h1 className="mt-4 font-serif text-3xl text-ink">Nouveau shooting</h1>
+      <h1 className="mt-4 font-serif text-3xl font-bold text-ink">Nouveau shooting</h1>
       <p className="mt-2 text-ink-soft">
         Seul le titre est requis — le reste peut être complété maintenant ou
         plus tard.

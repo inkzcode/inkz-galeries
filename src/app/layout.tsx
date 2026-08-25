@@ -9,19 +9,19 @@ import "./globals.css";
 // cette décision.
 // Parkinsans (2026-08-25) remplace Geomanist — retour d'Enzo : chargée
 // via next/font/local (Geomanist n'existe pas sur Google Fonts), seuls
-// les fichiers Regular/Regular-Italic reçus n'offraient aucun poids gras,
-// et les titres (aucun ne pose de classe `font-bold`/`font-semibold`
-// dessus, voir grep sur `font-serif` dans les composants) rendaient donc
-// toujours en 400 — "encore en light" malgré le changement de police.
-// Parkinsans EST sur Google Fonts (variable 300–800) : chargée directement
-// via next/font/google, en figeant le poids sur 700 plutôt qu'en laissant
-// la variable ouverte, pour que CHAQUE usage de `font-serif` rende gras
-// par défaut sans devoir toucher chacun des ~20 titres du site un par un.
-// Le nom de variable `--font-serif-app` vient du scaffold d'origine —
-// gardé pour ne pas devoir toucher tous les composants qui utilisent déjà
-// `font-serif`, même si Parkinsans est une sans-serif géométrique.
+// les fichiers Regular/Regular-Italic reçus n'offraient aucun poids gras.
+// Un premier correctif a figé le poids sur 700 (une seule @font-face,
+// donc chaque `font-serif` rendait gras sans classe dédiée) — mais ça
+// aplatit toute la hiérarchie : le même 700 sur un h1 de page ET un
+// numéro d'étape ET une légende, "le titre est trop gras, la hiérarchie
+// est très mauvaise" (retour d'Enzo, même jour). Chargée en variable
+// complète (300–800) à la place : chaque composant choisit maintenant
+// explicitement son poids via les classes Tailwind `font-bold`/
+// `font-semibold`/`font-medium` selon son rôle (titre principal, sous-
+// titre, texte décoratif) — voir globals.css pour le mapping des poids
+// disponibles sur `font-serif`.
 const displayFont = Parkinsans({
-  weight: "700",
+  weight: "variable",
   subsets: ["latin"],
   variable: "--font-serif-app",
   display: "swap",

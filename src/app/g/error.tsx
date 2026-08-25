@@ -16,7 +16,7 @@ export default function GalleryError({
       <p className="text-sm tracking-wide text-muted uppercase">
         Un instant
       </p>
-      <h1 className="font-serif text-2xl text-ink">
+      <h1 className="font-serif text-2xl font-semibold text-ink">
         Quelque chose s&apos;est mal passé
       </h1>
       <p className="text-ink-soft">

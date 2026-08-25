@@ -28,7 +28,7 @@ export function PortfolioGrid({ entries }: { entries: PortfolioEntry[] }) {
     >
       {entries.map((entry) => (
         <motion.div
-          key={entry.slug}
+          key={entry.id}
           variants={tile}
           whileHover={{ y: -4 }}
           className="group relative mb-4 break-inside-avoid overflow-hidden rounded-md bg-surface"
@@ -40,7 +40,7 @@ export function PortfolioGrid({ entries }: { entries: PortfolioEntry[] }) {
             className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent px-4 pt-10 pb-3">
-            <p className="font-serif text-lg text-paper">{entry.title}</p>
+            <p className="font-serif text-lg font-semibold text-paper">{entry.title}</p>
             {entry.shootingType && (
               <p className="text-xs tracking-wide text-paper/70 uppercase">{entry.shootingType}</p>
             )}

@@ -69,7 +69,7 @@ export function DeliveryView({
         transition={{ duration: 0.5 }}
       >
         <p className="text-sm tracking-wide text-muted uppercase">{galleryTitle}</p>
-        <h1 className="font-serif text-3xl text-ink sm:text-4xl">Tes photos sont prêtes ✨</h1>
+        <h1 className="font-serif text-3xl font-bold text-ink sm:text-4xl">Tes photos sont prêtes ✨</h1>
         <p className="mt-2 max-w-xl text-ink-soft">
           Voici tes photographies finales, en haute définition, sans filigrane.
         </p>

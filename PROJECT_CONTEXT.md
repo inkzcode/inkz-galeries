@@ -2621,6 +2621,67 @@ build. Rendu vérifié en direct dans le navigateur : la section apparaît
 au bon endroit, aucune erreur console, état vide affiché correctement
 (toujours aucun shooting publié pour l'instant).
 
+## 6octotrigies. Portfolio autonome + hiérarchie typographique (2026-08-26)
+
+Requête massive d'Enzo (2026-08-25 tard/2026-08-26), traitée en un seul
+passage sans s'arrêter, comme demandé. Deux chantiers de fond ici ; les
+suivants (couleurs de marque, animations, micro-interactions, jauge B2,
+curation inkz.fr) documentés dans les sections suivantes.
+
+**1. Portfolio autonome** (retour d'Enzo : "un bouton dans l'espace
+photographe où je peux ajouter des trucs dans mon portfolio sans passer
+par inkz.fr ni par un shooting quelconque") — nouveau modèle
+`PortfolioItem`, délibérément SANS relation vers `Gallery` (contrairement
+à `portfolioCoverPhotoId`, qui lui vient toujours d'un vrai shooting
+client, voir §6septtrigies). Toujours déjà finalisé (pas de RAW, pas de
+watermark, pas de sélection) — stocké tel quel dans le bucket "previews"
+sous le préfixe `portfolio/`. Nouvelle page `/admin/portfolio` (lien
+depuis le dashboard) : formulaire d'ajout (image + titre + catégorie +
+description, dépôt direct navigateur→stockage comme pour les photos de
+shooting) et liste avec suppression. `portfolio-service.ts` fusionne
+maintenant DEUX sources pour la lecture publique — shootings publiés et
+éléments autonomes — triées ensemble par date ; le lecteur public ne voit
+jamais la différence. `direct-upload-helpers.ts` (jusque-là spécifique à
+`admin/galleries/[id]/`) déplacé vers `lib/upload/direct-upload.ts`,
+maintenant réutilisé par ce nouveau flux aussi.
+
+**2. Hiérarchie typographique** (retour d'Enzo, même jour : "le titre est
+trop gras, la hiérarchie des textes est très mauvaise") — conséquence
+directe du correctif de la veille (§6tertrigies "correction") qui avait
+figé Parkinsans sur un seul poids 700 : ÇA aplatit toute hiérarchie, un
+h1 de page et un numéro d'étape rendent identiques. Parkinsans rechargée
+en variable complète (300–800, `weight: "variable"` — pas
+`"300 800"`, rejeté par le typage Next généré pour ce font précis) ;
+chacun des ~23 usages de `font-serif` du site reçoit maintenant une
+classe Tailwind explicite (`font-bold` pour les titres principaux de
+page, `font-semibold` pour les sous-titres/titres de carte,
+`font-medium` pour le texte serif décoratif de petite taille comme
+`raw-disclaimer.tsx`) plutôt que de compter sur un poids par défaut.
+
+**Deux bugs de vérification, pas des bugs vus par Enzo :**
+- `weight: "300 800"` compile en TypeScript... non — erreur de type
+  immédiate (`tsc`), le typage généré pour Parkinsans n'accepte qu'une
+  liste de poids fixes ou le littéral `"variable"`. Corrigé avant même
+  d'atteindre le navigateur.
+- Après correction et redémarrage du serveur de dev, `next build`
+  passait, mais le serveur de dev DÉJÀ LANCÉ (depuis avant l'ajout du
+  modèle `PortfolioItem`) plantait sur `prisma.portfolioItem.findMany is
+  not a function` malgré un `prisma generate` déjà relancé après la
+  migration — le process long-vivant garde une référence en mémoire à
+  l'ancien client généré, un `prisma generate` seul ne suffit pas à la
+  rafraîchir. Corrigé par un redémarrage complet du serveur de dev — pas
+  un bug de code, mais un piège d'environnement à connaître : après toute
+  migration de schéma, redémarrer le serveur de dev, pas seulement
+  relancer `prisma generate`.
+
+Vérifié : `tsc`/`eslint . `/81 tests/build de production complet tous
+propres, `/admin/portfolio` apparaît dans la sortie du build. Poids de
+police confirmés en direct dans le navigateur après redémarrage (h1 à
+700, h2 à 600, plus de plat). Migration `PortfolioItem` appliquée à la
+vraie base Neon (même méthode que §6septtrigies : SQL généré via
+`prisma migrate diff`, fichier écrit à la main pour éviter la pollution
+stdout de dotenv, appliqué via `prisma migrate deploy`).
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

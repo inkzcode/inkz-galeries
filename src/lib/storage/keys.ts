@@ -26,3 +26,13 @@ export function buildPhotoObjectKey(params: {
   const { galleryId, photoId, kind, extension } = params;
   return `${galleryId}/${photoId}/${kind}.${sanitizeExtension(extension)}`;
 }
+
+// Éléments de portfolio autonomes (pas de galerie/shooting associé, voir
+// PortfolioItem dans schema.prisma) — préfixe distinct pour ne jamais
+// pouvoir collisionner avec une clé `{galleryId}/...` existante.
+export function buildPortfolioItemObjectKey(params: {
+  itemId: string;
+  extension: string;
+}): string {
+  return `portfolio/${params.itemId}/image.${sanitizeExtension(params.extension)}`;
+}

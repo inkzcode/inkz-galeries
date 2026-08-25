@@ -11,7 +11,7 @@ export function AccessForm({ gallerySlug, galleryTitle }: { gallerySlug: string;
     <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center gap-8 px-6 py-24">
       <div className="flex flex-col gap-2">
         <p className="text-sm tracking-wide text-muted uppercase">Accès galerie</p>
-        <h1 className="font-serif text-3xl text-ink">{galleryTitle}</h1>
+        <h1 className="font-serif text-3xl font-bold text-ink">{galleryTitle}</h1>
         <p className="text-ink-soft">
           Saisissez le code transmis pour retrouver votre galerie.
         </p>

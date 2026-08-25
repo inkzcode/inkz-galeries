@@ -142,7 +142,7 @@ export function GalleryView({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="font-serif text-3xl text-ink sm:text-4xl">{gallery.title}</h1>
+        <h1 className="font-serif text-3xl font-bold text-ink sm:text-4xl">{gallery.title}</h1>
         {gallery.description && (
           <p className="mt-2 max-w-xl text-ink-soft">{gallery.description}</p>
         )}

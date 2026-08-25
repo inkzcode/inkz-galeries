@@ -2392,6 +2392,28 @@ livraison de ce chantier se termine par un push (avec confirmation
 explicite d'Enzo avant, comme convenu), pas seulement par les tests
 locaux.
 
+**Correction le même jour** : une fois déployé, Enzo a signalé que la
+typo restait "en light" malgré le changement — le vrai problème n'était
+pas Geomanist en tant que tel, mais qu'aucun composant ne pose de classe
+`font-bold`/`font-semibold` sur `font-serif` (vérifié par grep, ~20
+titres concernés), donc tout rendait en 400 quelle que soit la police
+choisie. Geomanist ne fournissant que Regular (pas de gras à charger même
+en le voulant), remplacée par **Parkinsans** — police variable (300–800)
+disponible sur Google Fonts, cette fois chargée via `next/font/google`
+plutôt qu'en local (plus de fichiers à gérer/committer). Chargée avec
+`weight: "700"` fixe plutôt qu'en variable ouverte : ça enregistre une
+SEULE `@font-face` à 700 pour la famille, donc n'importe quel texte qui
+demande cette famille (même à `font-weight: 400`, faute de classe) rend
+forcément en gras — corrige tous les titres d'un coup sans toucher
+chacun des composants. Vérifié en inspectant directement les
+`@font-face` générées dans les feuilles de style du navigateur
+(`font-weight: 700`, une seule occurrence pour "Parkinsans"), tsc/eslint/
+81 tests/build de production tous propres (un avertissement Turbopack
+bénin : "Failed to find font override values for font `Parkinsans`" —
+Next n'a pas de métriques de fallback pour cette police récente dans sa
+base, aucun impact fonctionnel). Fichiers locaux Geomanist supprimés
+(plus utilisés).
+
 ## 6quatertrigies. Les 3 emails automatiques restants (2026-08-25)
 
 Suite du backlog du §6tertrigies, toujours le 2026-08-25 : les 3 emails

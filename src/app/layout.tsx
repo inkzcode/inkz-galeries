@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Parkinsans, Plus_Jakarta_Sans } from "next/font/google";
 import { MotionProvider } from "./motion-provider";
 import "./globals.css";
 
@@ -8,20 +7,22 @@ import "./globals.css";
 // du Milestone 0. Auto-hébergées par Next, aucune requête externe au
 // runtime — voir PROJECT_CONTEXT.md §6bis/6dixies pour le contexte de
 // cette décision.
-// Geomanist (2026-08-25) remplace Fraunces — retour d'Enzo : "cette
-// affreuse typo avec empattement light". Police fournie par Enzo
-// (licence perso), chargée en local via next/font/local plutôt que
-// next/font/google puisqu'elle n'y est pas distribuée. Seuls les fichiers
-// Regular/Regular-Italic étaient fournis (pas de gras) — suffisant pour
-// les titres actuels, qui ne s'appuient pas sur un poids gras dédié. Le
-// nom de variable `--font-serif-app` vient du scaffold d'origine — gardé
-// pour ne pas devoir toucher tous les composants qui utilisent déjà
-// `font-serif` pour les titres, même si Geomanist est une sans-serif.
-const displayFont = localFont({
-  src: [
-    { path: "./fonts/geomanist/geomanist-regular.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/geomanist/geomanist-regular-italic.woff2", weight: "400", style: "italic" },
-  ],
+// Parkinsans (2026-08-25) remplace Geomanist — retour d'Enzo : chargée
+// via next/font/local (Geomanist n'existe pas sur Google Fonts), seuls
+// les fichiers Regular/Regular-Italic reçus n'offraient aucun poids gras,
+// et les titres (aucun ne pose de classe `font-bold`/`font-semibold`
+// dessus, voir grep sur `font-serif` dans les composants) rendaient donc
+// toujours en 400 — "encore en light" malgré le changement de police.
+// Parkinsans EST sur Google Fonts (variable 300–800) : chargée directement
+// via next/font/google, en figeant le poids sur 700 plutôt qu'en laissant
+// la variable ouverte, pour que CHAQUE usage de `font-serif` rende gras
+// par défaut sans devoir toucher chacun des ~20 titres du site un par un.
+// Le nom de variable `--font-serif-app` vient du scaffold d'origine —
+// gardé pour ne pas devoir toucher tous les composants qui utilisent déjà
+// `font-serif`, même si Parkinsans est une sans-serif géométrique.
+const displayFont = Parkinsans({
+  weight: "700",
+  subsets: ["latin"],
   variable: "--font-serif-app",
   display: "swap",
 });

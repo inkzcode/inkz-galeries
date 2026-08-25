@@ -74,12 +74,14 @@ export function DeliveryView({
           Voici tes photographies finales, en haute définition, sans filigrane.
         </p>
         {photos.length > 0 && (
-          <a
+          <motion.a
             href={`/g/${gallerySlug}/download-all`}
-            className="mt-4 inline-flex items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-paper transition-opacity hover:opacity-90"
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className="mt-4 inline-flex w-fit items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90"
           >
             Tout télécharger ({photos.length} photo{photos.length > 1 ? "s" : ""})
-          </a>
+          </motion.a>
         )}
       </motion.div>
 
@@ -132,14 +134,16 @@ export function DeliveryView({
         onNavigate={setOpenIndex}
       >
         {openPhoto && (
-          <a
+          <motion.a
             href={openPhoto.downloadUrl}
             download={openPhoto.filename}
             onClick={(event) => event.stopPropagation()}
-            className="inline-flex items-center justify-center rounded-md bg-accent px-6 py-2.5 text-sm font-medium text-paper transition-opacity hover:opacity-90"
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className="inline-flex items-center justify-center rounded-md bg-accent px-6 py-2.5 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90"
           >
             Télécharger cette photo
-          </a>
+          </motion.a>
         )}
       </Lightbox>
     </main>

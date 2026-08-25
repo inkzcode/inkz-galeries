@@ -29,7 +29,7 @@ export function GalleryList({ galleries }: { galleries: Gallery[] }) {
           <motion.div whileHover={{ x: 6 }} transition={{ duration: 0.2, ease: "easeOut" }}>
             <Link
               href={`/admin/galleries/${gallery.id}`}
-              className="-mx-3 flex flex-col gap-1 rounded-md px-3 py-4 hover:bg-surface sm:flex-row sm:items-center sm:justify-between"
+              className="-mx-3 flex flex-col gap-1 rounded-md border border-transparent px-3 py-4 transition-colors hover:border-accent-tint hover:bg-surface sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
                 <p className="text-ink">{gallery.title}</p>

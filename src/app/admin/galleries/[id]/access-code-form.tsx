@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { motion } from "motion/react";
 import { issueAccessCodeAction } from "./access-code-actions";
 
 export function AccessCodeForm({ galleryId }: { galleryId: string }) {
@@ -19,13 +20,15 @@ export function AccessCodeForm({ galleryId }: { galleryId: string }) {
         />
       </label>
 
-      <button
+      <motion.button
         type="submit"
         disabled={pending}
-        className="inline-flex w-fit items-center justify-center rounded-md border border-ink px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-ink hover:text-paper disabled:opacity-60"
+        whileHover={pending ? undefined : { scale: 1.03, y: -1 }}
+        whileTap={pending ? undefined : { scale: 0.97 }}
+        className="inline-flex w-fit items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Génération…" : "Générer un nouveau code d'accès"}
-      </button>
+      </motion.button>
 
       {state?.error && (
         <p role="alert" className="text-sm text-danger">

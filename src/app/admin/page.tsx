@@ -51,6 +51,25 @@ export default async function AdminDashboard() {
           </div>
         </details>
       )}
+
+      {/* Retour d'Enzo, 2026-08-25 : "je n'ai que 1 Go par jour, je veux
+          voir à combien de pourcent je suis". Pas de chiffre affiché ici,
+          volontairement — l'API S3-compatible de Backblaze (celle que cette
+          app utilise) n'expose aucune donnée d'usage/quota, seul le
+          tableau de bord Backblaze lui-même les montre (Compte → Caps &
+          Alerts). Un faux pourcentage estimé serait pire qu'aucun chiffre
+          — risque justement de faire dépasser le plafond en toute
+          confiance. Lien direct pour vérifier en un clic plutôt qu'un
+          chiffre inventé. */}
+      <a
+        href="https://secure.backblaze.com/account_caps.htm"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-10 flex items-center justify-between gap-3 rounded-md border border-border px-4 py-3 text-sm text-ink-soft transition-colors hover:border-ink hover:text-ink"
+      >
+        <span>Vérifier l&apos;usage du stockage (Backblaze — 1 Go gratuit/jour)</span>
+        <span aria-hidden>↗</span>
+      </a>
     </main>
   );
 }

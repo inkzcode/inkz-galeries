@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { motion } from "motion/react";
 import {
   addPhotoNoteAction,
   updatePhotoNoteAction,
@@ -8,6 +9,8 @@ import {
 } from "./photo-note-actions";
 import type { PublicGalleryNote } from "@/lib/services/public-gallery-service";
 import type { DraftNote } from "./drawing-overlay";
+import { HeartButton } from "./heart-button";
+import { SendBurst } from "./send-burst";
 
 // Panneau latéral de remarques (retour d'Enzo, 2026-08-22 : "à droite il
 // devrait y avoir une fenêtre où on peut écrire des trucs plutôt qu'une
@@ -61,6 +64,9 @@ export function PhotoNotesPanel({
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  // Incrémenté à chaque envoi réussi — voir send-burst.tsx, rejoue
+  // l'animation "s'en va vers le photographe" sans logique show/hide ici.
+  const [sendTriggerKey, setSendTriggerKey] = useState(0);
 
   const dirtyEntries = Object.entries(editedMessages).filter(
     ([noteId, message]) => message !== (notes.find((n) => n.id === noteId)?.message ?? ""),
@@ -103,6 +109,9 @@ export function PhotoNotesPanel({
           return next;
         });
       }
+      if (savedDraftIds.length > 0 || savedEditIds.length > 0) {
+        setSendTriggerKey((key) => key + 1);
+      }
       setTouched(false);
     });
   }
@@ -128,19 +137,7 @@ export function PhotoNotesPanel({
       <div className="shrink-0 border-b border-paper/10 p-4">
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-paper">Cette photo</span>
-          {!locked && (
-            <button
-              type="button"
-              onClick={onToggleSelected}
-              aria-pressed={selected}
-              aria-label={selected ? "Retirer de la sélection" : "Ajouter à la sélection"}
-              className={`flex h-9 w-9 items-center justify-center rounded-full text-lg transition-colors ${
-                selected ? "bg-accent text-paper" : "bg-paper/10 text-paper hover:bg-paper/20"
-              }`}
-            >
-              {selected ? "♥" : "♡"}
-            </button>
-          )}
+          <HeartButton selected={selected} locked={locked} onToggle={onToggleSelected} variant="panel" />
         </div>
         {hasTips && (
           <p className="mt-3 text-xs leading-relaxed text-paper/70">{tips!.selfImageMessage}</p>
@@ -246,16 +243,19 @@ export function PhotoNotesPanel({
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-paper/10 p-4">
+      <div className="relative shrink-0 border-t border-paper/10 p-4">
         {error && <p className="mb-2 text-xs text-danger">{error}</p>}
-        <button
+        <motion.button
           type="button"
           onClick={handleSave}
           disabled={pending || !hasChanges}
-          className="w-full rounded-md bg-paper/15 px-4 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-paper/25 disabled:cursor-not-allowed disabled:opacity-40"
+          whileHover={pending || !hasChanges ? undefined : { scale: 1.02 }}
+          whileTap={pending || !hasChanges ? undefined : { scale: 0.97 }}
+          className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-paper/15 disabled:opacity-40"
         >
           {pending ? "Enregistrement…" : "Enregistrer mes remarques"}
-        </button>
+        </motion.button>
+        <SendBurst triggerKey={sendTriggerKey} />
       </div>
     </div>
   );

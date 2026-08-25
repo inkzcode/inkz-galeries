@@ -2682,6 +2682,86 @@ vraie base Neon (même méthode que §6septtrigies : SQL généré via
 `prisma migrate diff`, fichier écrit à la main pour éviter la pollution
 stdout de dotenv, appliqué via `prisma migrate deploy`).
 
+## 6neuftrigies. Animations, couleurs de marque, jauge B2, curation inkz.fr (2026-08-26)
+
+Suite et fin (pour cette session) de la requête massive du §6octotrigies.
+
+**Animations "s'en va vers le photographe"** (retour d'Enzo : "quand on
+enregistre mes remarques [...] pareil pour confirmer ma sélection") —
+nouveau composant partagé `g/[slug]/send-burst.tsx` : un petit signal
+part du bouton et s'estompe en s'éloignant, rejoué à chaque envoi réussi
+via une clé incrémentée (`key={triggerKey}` dans `AnimatePresence` —
+chaque nouvelle valeur = nouvel élément = animation d'entrée rejouée,
+sans logique show/hide côté appelant). Branché sur "Enregistrer mes
+remarques" (`photo-notes-panel.tsx`) et "Confirmer définitivement"
+(`confirm-selection-bar.tsx`, qui a dû être restructuré : le signal vit
+maintenant dans un wrapper permanent en dehors du bloc `if (locked)`,
+sinon la fermeture immédiate du récapitulatif après succès aurait coupé
+l'animation avant la fin).
+
+**Confettis + vibration du cœur** (retour d'Enzo : "quand on met une
+photo en cœur [...] des mini confettis autour ou une vibration du cœur")
+— les deux à la fois, jamais au retrait. Nouveau composant partagé
+`g/[slug]/heart-button.tsx` (remplace le bouton dupliqué dans
+`gallery-view.tsx` ET `photo-notes-panel.tsx` — même logique de burst
+aux deux endroits maintenant, un seul endroit à maintenir) : 6 particules
+rouge/or partent du cœur en éventail pendant qu'il vibre
+(scale/rotate en keyframes), variante `chip` (pastille claire sur une
+photo) ou `panel` (fond sombre du panneau) selon le contexte.
+
+**Hiérarchie/couleurs/animations, portée assumée** — passage réel mais
+délibérément NON exhaustif sur le reste du site (boutons admin
+principaux, cartes de la liste de shootings, téléchargements de la page
+de livraison) plutôt qu'un audit component-par-component de
+l'intégralité de l'admin : le rouge/or est maintenant présent au-delà des
+seules pages de garde (bouton "Générer un code d'accès", cartes de la
+liste de shootings avec halo au survol, tous les boutons "Télécharger"),
+et les interactions cliquables ont un retour `whileHover`/`whileTap`
+plutôt qu'une simple transition de couleur. **À itérer avec Enzo** s'il
+repère un endroit précis encore trop statique ou trop neutre — plus
+efficace qu'une passe exhaustive à l'aveugle sur des dizaines de
+composants.
+
+**Jauge d'usage Backblaze (1 Go/jour)** — recherché avant de coder :
+l'API S3-compatible utilisée par ce projet n'expose AUCUNE donnée de
+quota/usage, et l'API native B2 ne semble l'offrir que via l'API
+Partenaire (rapports d'usage, plutôt pensée pour des revendeurs) ou le
+tableau de bord Backblaze lui-même — pas de moyen fiable de calculer un
+vrai pourcentage en direct depuis cette app. Un chiffre approximatif
+aurait été pire que pas de chiffre du tout : le risque précis qu'Enzo
+veut éviter, c'est justement de dépasser le plafond EN CONFIANCE à cause
+d'un chiffre faux. Ajouté à la place un lien direct depuis le dashboard
+admin vers `secure.backblaze.com/account_caps.htm` (Compte → Caps &
+Alerts) — la vraie donnée, en un clic, plutôt qu'une estimation
+trompeuse.
+
+**Curation inkz.fr** (retour d'Enzo : "je veux Ya pas moyen, Clair-
+Obscur, Twin Blades, Les portraits du cœur, Iris, Balades, Études de
+Lumière, Clown, Skate Park [au portfolio]") — les 9 pages parcourues une
+par une (`inkz.fr/portfolio-item/...`), l'image principale de chacune
+identifiée en observant quelle requête réseau apparaît juste après
+chaque navigation (heuristique fiable : le nom de fichier correspond au
+slug du projet dans 8 cas sur 9 — seule "Balades" charge un fichier nommé
+"instant8", sans lien évident avec le nom de la page). URL pleine
+résolution reconstruite en retirant le suffixe `-WxH` que WordPress
+ajoute aux miniatures (vérifié sur un cas : `skate-park12.jpg` charge
+bien en 1365×2048, confirmant l'hypothèse). Liste des 9 URLs transmise à
+Enzo en réponse — **pas importées automatiquement** : la fonctionnalité
+qui permet ça (portfolio autonome, §6octotrigies) exige de passer par le
+formulaire d'upload direct navigateur→stockage, et cette session n'a que
+des identifiants de stockage locaux vides (voir §6tertrigies /
+§6sextrigies pour le même constat) — impossible d'uploader des fichiers
+réels vers le vrai bucket B2 de production depuis cet environnement.
+Enzo doit lui-même déposer ces 9 images via `/admin/portfolio` (quelques
+clics chacune, formulaire déjà construit).
+
+Vérifié : `tsc`/`eslint . `/81 tests/build de production complet tous
+propres. Animations (confettis, envoi, hover/tap) vérifiées par lecture
+de code et par le typage/lint uniquement — **pas testées interactivement
+dans un vrai navigateur** : aucune galerie avec photos réelles ni session
+d'accès client montée dans cet environnement pour cliquer dessus pour de
+vrai. À vérifier par Enzo au prochain vrai test.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

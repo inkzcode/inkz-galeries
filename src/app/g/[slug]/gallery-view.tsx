@@ -12,6 +12,7 @@ import { colorForNoteIndex } from "@/lib/domain/note-colors";
 import { WATERMARK_DISCLAIMER } from "@/lib/domain/watermark-policy";
 import type { DrawingPoint, PublicGallery } from "@/lib/services/public-gallery-service";
 import { RawDisclaimer } from "./raw-disclaimer";
+import { HeartButton } from "./heart-button";
 
 const EASE = [0.2, 0.7, 0.3, 1] as const;
 const grid: Variants = {
@@ -192,22 +193,14 @@ export function GalleryView({
               </span>
             )}
 
-            {!locked && (
-              <motion.button
-                type="button"
-                onClick={() => handleToggle(photo.id)}
-                whileTap={{ scale: 0.85 }}
-                aria-label={photo.selected ? "Retirer de la sélection" : "Ajouter à la sélection"}
-                aria-pressed={photo.selected}
-                className={`absolute top-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-lg shadow-sm transition-colors ${
-                  photo.selected
-                    ? "bg-accent text-paper"
-                    : "bg-paper/80 text-ink backdrop-blur-sm hover:bg-paper"
-                }`}
-              >
-                {photo.selected ? "♥" : "♡"}
-              </motion.button>
-            )}
+            <span className="absolute top-2 right-2">
+              <HeartButton
+                selected={photo.selected}
+                locked={locked}
+                onToggle={() => handleToggle(photo.id)}
+                variant="chip"
+              />
+            </span>
           </motion.div>
         ))}
       </motion.div>

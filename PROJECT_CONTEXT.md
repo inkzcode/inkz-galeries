@@ -2207,6 +2207,31 @@ niveau de vérification locale le plus poussé de toute cette
 fonctionnalité, après trois échecs consécutifs sur les tentatives
 précédentes.
 
+**Suite, quatrième piège — cette fois invisible en local, seulement au
+runtime Vercel** : le build local passait proprement, mais Enzo a
+retesté et eu une NOUVELLE erreur (pas la même) : `TypeError: The "path"
+argument must be of type string. Received type number`. Cause : même
+via `createRequire(import.meta.url).resolve(...)`, Turbopack réécrit
+`require.resolve()` dans le bundle SERVEUR compilé en un ID de module
+interne (un nombre), jamais un vrai chemin — invisible avec un script
+Node nu (qui n'exécute jamais le code une fois passé par le bundler),
+seulement démasqué en marchant sur le vrai runtime Vercel. Fix : plus
+aucune résolution de module (`require`/`import`) pour ce chemin —
+`process.cwd()` (répertoire de travail réel de la fonction serverless)
++ un chemin relatif fixe (`node_modules/@colorhythm/libraw-wasm/dist/libraw.wasm`),
+sans aucune sémantique reconnue par un bundler, donc rien à intercepter.
+
+**Cette fois, vérification poussée un cran plus loin qu'avant** : au
+lieu de ne tester que le fichier source via un script isolé (qui n'avait
+pas révélé le piège précédent, justement invisible hors du bundler),
+inspection directe du CHUNK COMPILÉ par Turbopack après
+`next build` — `path.join(process.cwd(), "node_modules",
+"@colorhythm", "libraw-wasm", "dist", "libraw.wasm")` y apparaît intact,
+comme du JS ordinaire, sans réécriture. Reste, comme toujours pour cette
+fonctionnalité, à confirmer par un vrai test d'Enzo sur la plateforme
+réelle — la seule vérification qui ait fini par révéler chacun des
+quatre pièges jusqu'ici.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

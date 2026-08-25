@@ -1,6 +1,5 @@
 import "server-only";
 import { LibRaw } from "@colorhythm/libraw-wasm";
-import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -33,17 +32,26 @@ import path from "node:path";
 // son chargement interne (voir le README du paquet, section "custom
 // asset pipeline").
 //
-// Piège suivant, trouvé en local avant de redéployer cette fois :
-// résoudre le chemin via `require.resolve('@colorhythm/libraw-wasm/libraw.wasm')`
+// Piège suivant, trouvé en local avant de redéployer : résoudre le
+// chemin via `require.resolve('@colorhythm/libraw-wasm/libraw.wasm')`
 // (le sous-chemin exporté par le paquet) fait ÉCHOUER LE BUILD — Turbopack
 // a un support natif des imports `.wasm` et le déclenche dès qu'il voit
 // une chaîne se terminant par `.wasm` passée à `require.resolve()`,
-// produisant un module cassé. Contourné en résolvant plutôt l'entrée JS
-// normale du paquet (`require.resolve('@colorhythm/libraw-wasm')`, jamais
-// spécial pour Turbopack) puis en construisant le chemin du `.wasm` par
-// un simple `path.join` sur son dossier — même technique
-// `turbopackIgnore` que pour `os.tmpdir()` plus haut dans ce fichier
-// historiquement (voir PROJECT_CONTEXT.md §6trigies point 3).
+// produisant un module cassé.
+//
+// Piège encore suivant, trouvé cette fois SUR Vercel (build local propre,
+// mais crash au runtime) : même en résolvant l'entrée JS du paquet via
+// `createRequire(import.meta.url).resolve(...)` puis `path.dirname()`,
+// Turbopack réécrit `require.resolve()` en un ID de module interne (un
+// NOMBRE, pas un vrai chemin) dans le bundle serveur compilé — jamais
+// visible en local avec un simple script Node, seulement une fois passé
+// par le bundler de Next.js. Erreur runtime : `TypeError: The "path"
+// argument must be of type string. Received type number`. Contourné en
+// abandonnant toute forme de résolution de module (`require`/`import`)
+// pour ce chemin : `process.cwd()` (répertoire de travail réel de la
+// fonction serverless, jamais réécrit) + un chemin relatif fixe vers
+// `node_modules/...` — aucune sémantique reconnue par un bundler, donc
+// rien à intercepter.
 let initialized: Promise<void> | null = null;
 function ensureInitialized(): Promise<void> {
   // LibRaw.initialize() est partagé au sein d'un même realm JS — un seul
@@ -56,9 +64,14 @@ function ensureInitialized(): Promise<void> {
 }
 
 async function loadWasmBytes(): Promise<ArrayBuffer> {
-  const require = createRequire(import.meta.url);
-  const entryPath = require.resolve("@colorhythm/libraw-wasm");
-  const wasmPath = path.join(/*turbopackIgnore: true*/ path.dirname(entryPath), "libraw.wasm");
+  const wasmPath = path.join(
+    process.cwd(),
+    "node_modules",
+    "@colorhythm",
+    "libraw-wasm",
+    "dist",
+    "libraw.wasm",
+  );
   const bytes = await readFile(wasmPath);
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }

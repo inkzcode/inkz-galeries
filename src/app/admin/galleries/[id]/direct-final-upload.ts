@@ -6,18 +6,25 @@ import { prepareFinalUploadAction, finalizeFinalImportAction } from "./final-upl
 // final-upload-actions.ts) — utilisée par le formulaire groupé
 // (retouch-workspace.tsx) ET le formulaire manuel (final-upload-form.tsx).
 
-async function uploadOneFinal(galleryId: string, photoId: string, file: File): Promise<boolean> {
+export type UploadFailure = { filename: string; reason: string };
+
+async function uploadOneFinal(
+  galleryId: string,
+  photoId: string,
+  file: File,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
   try {
     const contentType = file.type || "image/jpeg";
     const prepared = await prepareFinalUploadAction(galleryId, photoId, contentType);
-    if ("error" in prepared) return false;
+    if ("error" in prepared) return { ok: false, reason: prepared.error };
 
     await putDirect(prepared.uploadUrl, file, contentType);
 
     const result = await finalizeFinalImportAction(galleryId, photoId, contentType);
-    return !("error" in result);
-  } catch {
-    return false;
+    if ("error" in result) return { ok: false, reason: result.error };
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : "Erreur inconnue." };
   }
 }
 
@@ -25,7 +32,7 @@ export async function uploadFinalDirectly(
   galleryId: string,
   photoId: string,
   file: File,
-): Promise<boolean> {
+): Promise<{ ok: true } | { ok: false; reason: string }> {
   return uploadOneFinal(galleryId, photoId, file);
 }
 
@@ -36,16 +43,22 @@ export async function uploadFinalsDirectlyBatch(
   candidates: { id: string; filename: string }[],
   files: File[],
   onProgress: (done: number, total: number) => void,
-): Promise<{ matched: number; unmatched: string[] }> {
+): Promise<{ matched: number; unmatched: UploadFailure[] }> {
   let matched = 0;
   let done = 0;
-  const unmatched: string[] = [];
+  const unmatched: UploadFailure[] = [];
 
   await runWithConcurrency(files, 3, async (file) => {
     const photoId = matchFilename(candidates, file.name);
-    const ok = photoId ? await uploadOneFinal(galleryId, photoId, file) : false;
-    if (ok) matched += 1;
-    else unmatched.push(file.name);
+    if (!photoId) {
+      unmatched.push({ filename: file.name, reason: "Aucune photo sélectionnée ne correspond." });
+      done += 1;
+      onProgress(done, files.length);
+      return;
+    }
+    const result = await uploadOneFinal(galleryId, photoId, file);
+    if (result.ok) matched += 1;
+    else unmatched.push({ filename: file.name, reason: result.reason });
     done += 1;
     onProgress(done, files.length);
   });

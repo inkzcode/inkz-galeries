@@ -30,7 +30,7 @@ export function SinglePhotoUploadForm({ galleryId }: { galleryId: string }) {
       const result = await uploadPhotosDirectly(galleryId, [original], [previewSource], () => {});
       setPending(false);
       if (result.imported === 0) {
-        setError("L'import a échoué.");
+        setError(result.unmatched[0]?.reason ?? "L'import a échoué.");
         return;
       }
       if (originalRef.current) originalRef.current.value = "";

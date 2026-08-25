@@ -27,10 +27,10 @@ export function FinalUploadForm({
     setSuccess(false);
     setPending(true);
     startTransition(async () => {
-      const ok = await uploadFinalDirectly(galleryId, photoId, file);
+      const result = await uploadFinalDirectly(galleryId, photoId, file);
       setPending(false);
-      if (!ok) {
-        setError("L'import a échoué.");
+      if (!result.ok) {
+        setError(result.reason);
         return;
       }
       setSuccess(true);

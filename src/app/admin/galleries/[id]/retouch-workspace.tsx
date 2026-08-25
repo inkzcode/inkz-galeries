@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { motion, type Variants } from "motion/react";
-import { uploadFinalsDirectlyBatch } from "./direct-final-upload";
+import { uploadFinalsDirectlyBatch, type UploadFailure } from "./direct-final-upload";
 import { FinalUploadForm } from "./final-upload-form";
 
 export type RetouchPhoto = {
@@ -48,7 +48,7 @@ export function RetouchWorkspace({
   const [, startTransition] = useTransition();
   const [pending, setPending] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const [state, setState] = useState<{ matched: number; unmatched: string[] } | undefined>(
+  const [state, setState] = useState<{ matched: number; unmatched: UploadFailure[] } | undefined>(
     undefined,
   );
   const [dragOver, setDragOver] = useState(false);
@@ -141,12 +141,12 @@ export function RetouchWorkspace({
           )}
           {state.unmatched.length > 0 && (
             <div className={state.matched > 0 ? "mt-2" : undefined}>
-              <p className="text-danger">
-                Échec (nom de fichier non reconnu, ou envoi impossible) pour :
-              </p>
+              <p className="text-danger">Échec pour :</p>
               <ul className="mt-1 list-disc pl-5 text-ink-soft">
-                {state.unmatched.map((name) => (
-                  <li key={name}>{name}</li>
+                {state.unmatched.map((failure) => (
+                  <li key={failure.filename}>
+                    {failure.filename} — <span className="text-danger">{failure.reason}</span>
+                  </li>
                 ))}
               </ul>
               <p className="mt-1 text-xs text-muted">

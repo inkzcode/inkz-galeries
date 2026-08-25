@@ -17,11 +17,13 @@ function extensionOf(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase();
 }
 
+export type UploadFailure = { filename: string; reason: string };
+
 async function uploadOnePhoto(
   galleryId: string,
   original: File,
   previewCandidates: File[],
-): Promise<{ ok: true } | { ok: false; filename: string }> {
+): Promise<{ ok: true } | { ok: false; filename: string; reason: string }> {
   const extension = extensionOf(original.name) || "raw";
   const isDisplayable = DISPLAYABLE_EXTENSIONS.has(extension);
 
@@ -35,20 +37,22 @@ async function uploadOnePhoto(
       ? previewCandidates.find((file) => file.name === matchedName)
       : undefined;
     if (!matchedPreview) {
-      return { ok: false, filename: original.name };
+      return { ok: false, filename: original.name, reason: "Aucun aperçu JPEG associé trouvé." };
     }
   }
 
   try {
     const originalContentType = original.type || "application/octet-stream";
     const prepared = await prepareOriginalUploadAction(galleryId, original.name, originalContentType);
-    if ("error" in prepared) return { ok: false, filename: original.name };
+    if ("error" in prepared) return { ok: false, filename: original.name, reason: prepared.error };
 
     await putDirect(prepared.uploadUrl, original, originalContentType);
 
     if (matchedPreview) {
       const previewPrepared = await preparePreviewSourceUploadAction(galleryId, prepared.photoId);
-      if ("error" in previewPrepared) return { ok: false, filename: original.name };
+      if ("error" in previewPrepared) {
+        return { ok: false, filename: original.name, reason: previewPrepared.error };
+      }
       // Toujours "image/jpeg" — même valeur que celle utilisée pour
       // signer l'URL côté serveur (voir preparePreviewSourceUploadAction),
       // jamais le type MIME rapporté par le navigateur pour ce fichier.
@@ -61,10 +65,11 @@ async function uploadOnePhoto(
       original.name,
       Boolean(matchedPreview),
     );
-    if ("error" in result) return { ok: false, filename: original.name };
+    if ("error" in result) return { ok: false, filename: original.name, reason: result.error };
     return { ok: true };
-  } catch {
-    return { ok: false, filename: original.name };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Erreur inconnue.";
+    return { ok: false, filename: original.name, reason };
   }
 }
 
@@ -73,15 +78,15 @@ export async function uploadPhotosDirectly(
   originals: File[],
   previews: File[],
   onProgress: (done: number, total: number) => void,
-): Promise<{ imported: number; unmatched: string[] }> {
+): Promise<{ imported: number; unmatched: UploadFailure[] }> {
   let imported = 0;
   let done = 0;
-  const unmatched: string[] = [];
+  const unmatched: UploadFailure[] = [];
 
   await runWithConcurrency(originals, 3, async (file) => {
     const result = await uploadOnePhoto(galleryId, file, previews);
     if (result.ok) imported += 1;
-    else unmatched.push(result.filename);
+    else unmatched.push({ filename: result.filename, reason: result.reason });
     done += 1;
     onProgress(done, originals.length);
   });

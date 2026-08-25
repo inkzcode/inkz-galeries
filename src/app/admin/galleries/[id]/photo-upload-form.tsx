@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { uploadPhotosDirectly } from "./direct-photo-upload";
+import { uploadPhotosDirectly, type UploadFailure } from "./direct-photo-upload";
 import { SinglePhotoUploadForm } from "./single-photo-upload-form";
 
 const DISPLAYABLE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
@@ -21,7 +21,7 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
   const [, startTransition] = useTransition();
   const [pending, setPending] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const [state, setState] = useState<{ imported: number; unmatched: string[] } | undefined>(
+  const [state, setState] = useState<{ imported: number; unmatched: UploadFailure[] } | undefined>(
     undefined,
   );
 
@@ -186,12 +186,12 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
           )}
           {state.unmatched.length > 0 && (
             <div className={state.imported > 0 ? "mt-2" : undefined}>
-              <p className="text-danger">
-                Échec (aucun aperçu trouvé, ou envoi impossible) pour :
-              </p>
+              <p className="text-danger">Échec pour :</p>
               <ul className="mt-1 list-disc pl-5 text-ink-soft">
-                {state.unmatched.map((name) => (
-                  <li key={name}>{name}</li>
+                {state.unmatched.map((failure) => (
+                  <li key={failure.filename}>
+                    {failure.filename} — <span className="text-danger">{failure.reason}</span>
+                  </li>
                 ))}
               </ul>
               <p className="mt-1 text-xs text-muted">

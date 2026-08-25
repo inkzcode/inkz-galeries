@@ -12,15 +12,25 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Le binaire WebAssembly de @colorhythm/libraw-wasm (extraction d'aperçu
+  // RAW, voir lib/imaging/extract-raw-preview.ts) n'était pas inclus dans
+  // le paquet serveur déployé sur Vercel — erreur réelle en production :
+  // "ENOENT: no such file or directory, open '.../libraw.[hash].wasm'".
+  // Cause connue et documentée par Next.js lui-même
+  // (node_modules/next/dist/docs/.../output.md, "Common include patterns
+  // for native/runtime assets") : le traçage automatique des fichiers
+  // nécessaires par route peut rater un fichier chargé dynamiquement.
+  outputFileTracingIncludes: {
+    "/*": ["node_modules/@colorhythm/libraw-wasm/**/*"],
+  },
   experimental: {
     serverActions: {
-      // Défaut 1 Mo — bien en dessous d'un RAW (souvent 20-80 Mo). Voir
-      // node_modules/next/dist/docs/.../serverActions.md. Suffisant pour
-      // la V1 (upload via Server Action) ; si les RAW deviennent un goulot
-      // d'étranglement en production, évoluer vers un upload direct signé
-      // vers R2 (le navigateur envoie directement au stockage, sans
-      // transiter par le serveur Next) plutôt que d'augmenter encore cette
-      // limite indéfiniment.
+      // Défaut 1 Mo — resté élevé même après le passage au dépôt direct
+      // navigateur→stockage (voir photos-actions.ts/final-upload-actions.ts,
+      // PROJECT_CONTEXT.md §6novovicies) : les Server Actions restantes
+      // (remarques photo, formulaires admin) n'envoient plus jamais de
+      // fichier volumineux, cette limite n'a donc plus d'effet pratique —
+      // pas retirée pour ne rien casser d'inattendu.
       bodySizeLimit: "100mb",
     },
   },

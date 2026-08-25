@@ -2146,6 +2146,40 @@ confirmation précise, pas une supposition). Remplacé par
   (certains RAW embarquent un aperçu dans un autre format — traité comme
   "aucun aperçu utilisable" plutôt que planter).
 
+**Suite, encore le même jour — testé avec de VRAIS RAW cette fois** :
+Enzo a donné le chemin de deux CR3 réels sur son propre PC
+(`IMG_9191.cr3`, `IMG_9192.cr3`, ~17 Mo chacun) — script jetable exécuté
+en local (pas via l'app, directement avec la librairie), extraction
+réussie des deux (aperçus JPEG 6000×4000, ~1,8 Mo, en-tête JPEG valide,
+relus avec succès par `sharp` — le même outil que la vraie chaîne de
+traitement). Bug d'échelle du pipeline complet confirmé sain ; script et
+fichiers extraits supprimés après vérification (jamais commités).
+
+Déployé ensuite → nouvel échec, différent : "Minified React error #441"
+sur toutes les photos. Logs Vercel consultés à nouveau : `RuntimeError:
+Aborted(Error: ENOENT: no such file or directory, open
+'/_next/static/immutable/media/libraw.[hash].wasm')`. Cause identifiée
+dans la documentation Next.js elle-même
+(`node_modules/next/dist/docs/.../output.md`, section "Common include
+patterns for native/runtime assets") : le traçage automatique des
+fichiers nécessaires par route ("Output File Tracing") place le
+`.wasm`, chargé dynamiquement via `import.meta.url`, dans les assets
+CLIENT (`_next/static/`, servis par CDN) plutôt que dans le paquet
+SERVEUR de la fonction — absent au runtime là où le code serveur en a
+besoin. Fix documenté et appliqué : `outputFileTracingIncludes` dans
+`next.config.ts` (`'/*': ['node_modules/@colorhythm/libraw-wasm/**/*']`)
+force son inclusion dans le paquet de chaque route. **Vérifié après
+coup, pas seulement supposé** : `libraw.wasm` apparaît maintenant dans
+`.next/server/app/admin/galleries/[id]/page.js.nft.json` (fichier de
+traçage généré par le build), absent avant ce correctif.
+
+**Troisième bug de la même journée sur cette seule fonctionnalité**,
+chacun différent (Perl absent → Worker absent de Node → fichier WASM mal
+tracé) — motif qui se confirme : ce projet a régulièrement des
+comportements qui divergent entre le local et Vercel, à vérifier
+systématiquement sur la vraie plateforme avant de considérer un fix
+terminé, jamais sur la seule base d'un `next build` local réussi.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

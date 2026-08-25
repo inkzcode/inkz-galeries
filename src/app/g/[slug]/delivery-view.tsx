@@ -26,9 +26,10 @@ type DeliveredPhoto = {
 
 // Étape 3 du parcours (brief §18) : "Tes photos sont prêtes ✨". Fichiers
 // HD, sans watermark (voir final-delivery-service.ts — le final n'est
-// jamais retraité). Téléchargement individuel seulement pour l'instant —
-// pas de "Tout télécharger" (nécessiterait de zipper côté serveur,
-// volontairement pas construit, le brief le présente comme "éventuel").
+// jamais retraité). "Tout télécharger" (brief §29) pointe simplement vers
+// download-all/route.ts — un zip streamé côté serveur, pas de JS
+// nécessaire ici, le navigateur gère le téléchargement comme n'importe
+// quel lien.
 //
 // Le marquage "livré" se déclenche ici, au montage réel dans le
 // navigateur — jamais pendant le rendu serveur de la page (voir
@@ -72,6 +73,14 @@ export function DeliveryView({
         <p className="mt-2 max-w-xl text-ink-soft">
           Voici tes photographies finales, en haute définition, sans filigrane.
         </p>
+        {photos.length > 0 && (
+          <a
+            href={`/g/${gallerySlug}/download-all`}
+            className="mt-4 inline-flex items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-paper transition-opacity hover:opacity-90"
+          >
+            Tout télécharger ({photos.length} photo{photos.length > 1 ? "s" : ""})
+          </a>
+        )}
       </motion.div>
 
       {photos.length === 0 ? (

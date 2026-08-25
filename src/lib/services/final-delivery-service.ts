@@ -123,6 +123,18 @@ export async function markDeliveredOnClientView(galleryId: string): Promise<void
   ]);
 }
 
+// Version légère de listDeliverablePhotos() pour le zip groupé
+// (download-all/route.ts) : juste de quoi lire chaque fichier depuis le
+// stockage (finalKey), pas d'URLs signées à générer pour rien — le zip
+// est produit et streamé côté serveur, jamais un lien direct vers B2.
+export function listDeliverableFinalKeys(galleryId: string) {
+  return prisma.photo.findMany({
+    where: { galleryId, selection: { isNot: null }, finalKey: { not: null } },
+    orderBy: { createdAt: "asc" },
+    select: { filename: true, finalKey: true },
+  });
+}
+
 export async function listDeliverablePhotos(galleryId: string) {
   const photos = await prisma.photo.findMany({
     where: { galleryId, selection: { isNot: null }, finalKey: { not: null } },

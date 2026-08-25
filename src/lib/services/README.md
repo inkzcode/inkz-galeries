@@ -51,7 +51,10 @@ Fichiers existants :
   `markDeliveredOnClientView()` (`READY_TO_DELIVER → DELIVERED`, déclenché
   par la simple consultation client, idempotent), `listDeliverablePhotos()`
   (renvoie `viewUrl` ET `downloadUrl` séparément par photo — voir
-  `lib/storage/README.md`).
+  `lib/storage/README.md`), `listDeliverableFinalKeys()` (juste
+  `filename`/`finalKey`, pour `g/[slug]/download-all/route.ts` — pas d'URL
+  signée à générer pour un fichier qui va être lu côté serveur puis
+  streamé dans un zip, pas transmis tel quel au client).
 - `payment-service.ts` — `markPaymentReceived()` : pas de Stripe réel
   (brief §16), enregistre juste qu'un paiement a été constaté par un autre
   moyen (`Payment.provider = null`) et fait avancer le statut

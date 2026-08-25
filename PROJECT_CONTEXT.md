@@ -2482,6 +2482,53 @@ document ("aucune suppression/archivage automatique").
 Vérifié : `tsc`/`eslint`/81 tests passent, build de production complet
 propre.
 
+## 6sextrigies. "Tout télécharger" en zip (2026-08-25)
+
+Dernier point du backlog encore "rapide" du 2026-08-25 (portfolio public
+et paiement réel restent, mais sont nettement plus gros — voir §7).
+Décision d'architecture qui méritait réflexion avant de coder : zipper
+côté client (JS dans le navigateur) ou côté serveur ?
+
+- **Côté client** écarté : lire les octets d'une URL signée B2 côté
+  navigateur nécessite un `fetch()` cross-origin, qui exige un CORS GET
+  configuré sur le bucket (contrairement à un simple `<img>`/`<a
+  download>`, qui n'en ont jamais eu besoin jusqu'ici — voir
+  §6trigies point 1 pour le précédent CORS de ce projet). Configurer ça
+  demande de faire tourner un script avec les vraies clés B2 — infaisable
+  pour Enzo depuis son iPad (aucun outil de script accessible), et cette
+  session n'a que des identifiants locaux vides (`.env.local` non
+  renseigné, adaptateur de stockage local utilisé en dev).
+- **Côté serveur** retenu : `g/[slug]/download-all/route.ts`, un Route
+  Handler qui lit chaque fichier final un par un
+  (`listDeliverableFinalKeys()`, nouveau dans `final-delivery-service.ts`)
+  et les empile dans un zip streamé (librairie `fflate`, `Zip` +
+  `ZipPassThrough` — mode STORE, aucune recompression : les JPEG sont déjà
+  compressés, ré-encoder ne ferait perdre que du temps CPU). Jamais tout
+  le zip en mémoire d'un coup : un fichier à la fois, chunks écrits au fil
+  de l'eau dans la réponse HTTP. Même protection que le reste de
+  `/g/[slug]` — le cookie d'accès galerie est scopé à ce chemin, envoyé
+  automatiquement par le navigateur ; **et** une session admin valide
+  passe aussi, sinon le lien casserait spécifiquement depuis l'aperçu
+  admin (`preview/page.tsx`), qui se veut "réellement interactif".
+  `maxDuration = 60` (le plafond Vercel sans changer de palier) — limite
+  réelle et assumée, pas de solution "vraiment illimitée" possible sur
+  une fonction serverless classique, mais raisonnable pour la taille
+  réelle des shootings de ce projet.
+- Simple lien `<a href="/g/[slug]/download-all">` côté `delivery-view.tsx`
+  — `Content-Disposition: attachment` fait tout le travail, aucun
+  JavaScript de zippage/téléchargement nécessaire côté client.
+
+Vérifié : l'usage exact de l'API `fflate` (jamais utilisée dans ce projet
+avant aujourd'hui) testé isolément — script jetable construisant un vrai
+zip à 3 fichiers via le même enchaînement `Zip`/`ZipPassThrough`/`push`
+que la route, vérifié avec `unzip -t` (intégrité) et `unzip -l` (contenu
+exact) avant d'être supprimé. `tsc`/`eslint`/81 tests/build de production
+complet tous propres, `/g/[slug]/download-all` apparaît bien dans la
+sortie du build. **Pas testé de bout en bout contre un vrai shooting
+livré** (nécessiterait une galerie complète jusqu'à `DELIVERED` en base,
+pas montée dans cette session) — à surveiller au premier essai réel
+d'Enzo.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

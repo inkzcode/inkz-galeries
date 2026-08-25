@@ -2180,6 +2180,33 @@ comportements qui divergent entre le local et Vercel, à vérifier
 systématiquement sur la vraie plateforme avant de considérer un fix
 terminé, jamais sur la seule base d'un `next build` local réussi.
 
+**Suite immédiate — le fix `outputFileTracingIncludes` seul ne suffisait
+pas**, même erreur persistante. Cause réelle : le code de la librairie
+charge son `.wasm` via un motif que Turbopack réécrit en asset client
+(déjà documenté ci-dessus) — tracer le fichier dans le paquet ne change
+rien tant que le CODE continue de demander le mauvais chemin. Fix
+définitif : lire le fichier nous-mêmes
+(`lib/imaging/extract-raw-preview.ts`) et passer les octets directement
+à `LibRaw.initialize()`, qui accepte un buffer explicite au lieu de son
+chargement interne. Piège suivant, trouvé EN LOCAL cette fois avant
+redéploiement (pas par Enzo) : résoudre le chemin via
+`require.resolve('@colorhythm/libraw-wasm/libraw.wasm')` (le sous-chemin
+que le paquet exporte lui-même) fait échouer le BUILD entier — Turbopack
+a un support natif des imports `.wasm` et le déclenche dès qu'il voit
+une chaîne `.wasm` passée à `require.resolve()`, produisant un module
+cassé ("Module not found: Can't resolve 'a'"). Contourné en résolvant
+l'entrée JS normale du paquet (`require.resolve('@colorhythm/libraw-wasm')`
+— jamais spécial pour Turbopack) puis en construisant le chemin du
+`.wasm` par un `path.join` sur son dossier, avec le même
+`/*turbopackIgnore: true*/` déjà utilisé pour `os.tmpdir()`. **Vérifié
+deux fois avant de redéployer** : script isolé confirmant que ce chemin
+fonctionne en local ET extraction réussie sur un vrai CR3 avec cette
+exacte méthode, puis `next build` local propre (aucun avertissement,
+`libraw.wasm` toujours bien présent dans le fichier de traçage) — le
+niveau de vérification locale le plus poussé de toute cette
+fonctionnalité, après trois échecs consécutifs sur les tentatives
+précédentes.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

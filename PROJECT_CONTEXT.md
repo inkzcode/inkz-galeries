@@ -3117,6 +3117,26 @@ image valide par le navigateur (pas de test du déclenchement `onError`
 en conditions réelles de quota dépassé — nécessiterait de vraies clés B2
 capées, absentes de cet environnement).
 
+**Extension le même jour** — capture d'écran d'Enzo (sans texte) montrant
+la grille "photos importées" de la page admin d'un shooting (pas
+`/preview`) : 16 photos, toutes en échec, toutes avec "Aperçu
+indisponible" + "Réessayer" (voir `photo-thumbnail.tsx`, §6trigies —
+correctif antérieur, indépendant de celui-ci). Interprété comme la même
+demande étendue à cette page, plutôt qu'une nouvelle question distincte
+— cohérent avec le message précédent ("continuer à travailler [...] voir
+à quoi ressemble la galerie"), cette grille étant un endroit tout aussi
+central du quotidien d'Enzo. `photo-thumbnail.tsx` modifié : l'état
+d'échec affiche maintenant `photo-placeholder.svg` en fond (même fichier
+que l'aperçu de galerie) avec un voile clair dessus, "Aperçu
+indisponible" + "Réessayer" restant au premier plan, inchangés dans leur
+fonctionnement. Garde le rythme de la grille visible même en échec,
+plutôt qu'un bloc plat sans aucun repère.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Interprétation d'une capture d'écran sans texte — signalé comme
+tel dans la réponse à Enzo, pour qu'il corrige si le besoin réel était
+différent.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

@@ -17,21 +17,32 @@ import { useState } from "react";
 // URL présignée S3/B2. L'état d'erreur ne disparaît QUE si ce nouvel
 // essai charge réellement (onLoad) ; un nouvel échec (onError) le
 // réaffiche aussitôt.
+//
+// Aperçu générique en fond (retour d'Enzo, 2026-08-27, capture d'écran
+// d'une galerie de 16 photos toutes en échec pendant un dépassement de
+// quota B2) — même fichier que l'aperçu admin de galerie
+// (photo-placeholder.svg), pour garder au moins le RYTHME de la grille
+// visible pendant que le quota est dépassé, plutôt qu'un bloc plat sans
+// aucun repère visuel. "Réessayer" reste au premier plan, inchangé.
 export function PhotoThumbnail({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
 
   if (failed) {
     return (
-      <div className="flex aspect-[3/2] w-full flex-col items-center justify-center gap-1.5 bg-danger/5 px-2 text-center">
-        <p className="text-xs font-medium text-danger">Aperçu indisponible</p>
+      <div
+        className="relative flex aspect-[3/2] w-full flex-col items-center justify-center gap-1.5 bg-cover bg-center px-2 text-center"
+        style={{ backgroundImage: "url(/photo-placeholder.svg)" }}
+      >
+        <div className="absolute inset-0 bg-paper/70" aria-hidden />
+        <p className="relative text-xs font-medium text-danger">Aperçu indisponible</p>
         <button
           type="button"
           onClick={() => {
             setFailed(false);
             setRetryToken((token) => token + 1);
           }}
-          className="rounded-md border border-danger px-2 py-1 text-xs text-danger transition-colors hover:bg-danger/10"
+          className="relative rounded-md border border-danger bg-paper px-2 py-1 text-xs text-danger transition-colors hover:bg-danger/10"
         >
           Réessayer
         </button>

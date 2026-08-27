@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { verifySession } from "@/lib/auth/dal";
 import { getStorageAdapter } from "@/lib/storage/client";
 import { buildPhotoObjectKey } from "@/lib/storage/keys";
+import { isStorageCapExceeded } from "@/lib/storage/errors";
 import { importPhoto } from "@/lib/services/import-photo";
 import { extractEmbeddedRawPreview } from "@/lib/imaging/extract-raw-preview";
 
@@ -48,6 +49,12 @@ async function getObjectBufferWithRetry(
       return await storage.getObjectBuffer(bucket, key);
     } catch (error) {
       lastError = error;
+      // Quota B2 dépassé (retour d'Enzo, 2026-08-27 : "ça me bloque tout
+      // de suite au lieu de tester toutes les photos et donc échouer
+      // toutes") — inutile de réessayer, ça ne réussira pas avant demain ;
+      // sortir tout de suite plutôt que de perdre ~2,6s par photo pour
+      // rien.
+      if (isStorageCapExceeded(error)) break;
       if (attempt < delaysMs.length) await wait(delaysMs[attempt]);
     }
   }
@@ -97,7 +104,24 @@ export async function preparePreviewSourceUploadAction(
   return { uploadUrl };
 }
 
-export type FinalizeImportResult = { success: true } | { error: string };
+export type FinalizeImportResult =
+  | { success: true }
+  | { error: string; capExceeded?: true };
+
+// Message distinct + drapeau `capExceeded` (retour d'Enzo, 2026-08-27) :
+// le client (direct-photo-upload.ts) s'en sert pour arrêter tout de suite
+// le reste du lot plutôt que de laisser chaque photo restante échouer une
+// par une avec le même message générique "fichier introuvable".
+function buildReadError(error: unknown): { error: string; capExceeded?: true } {
+  console.error("Échec de lecture du fichier envoyé :", error);
+  if (isStorageCapExceeded(error)) {
+    return {
+      error: "Quota Backblaze du jour dépassé (1 Go) — réessayez demain après minuit.",
+      capExceeded: true,
+    };
+  }
+  return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
+}
 
 export async function finalizeOriginalImportAction(
   galleryId: string,
@@ -122,15 +146,13 @@ export async function finalizeOriginalImportAction(
     try {
       previewSourceBuffer = await getObjectBufferWithRetry(storage, "originals", previewSourceKey);
     } catch (error) {
-      console.error("Échec de lecture du fichier envoyé :", error);
-      return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
+      return buildReadError(error);
     }
   } else if (isDisplayable) {
     try {
       previewSourceBuffer = await getObjectBufferWithRetry(storage, "originals", originalKey);
     } catch (error) {
-      console.error("Échec de lecture du fichier envoyé :", error);
-      return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
+      return buildReadError(error);
     }
   } else {
     // RAW sans aperçu fourni : extraction automatique de l'aperçu JPEG
@@ -140,8 +162,7 @@ export async function finalizeOriginalImportAction(
     try {
       rawBuffer = await getObjectBufferWithRetry(storage, "originals", originalKey);
     } catch (error) {
-      console.error("Échec de lecture du fichier envoyé :", error);
-      return { error: "Le fichier envoyé est introuvable — réessayer l'import." };
+      return buildReadError(error);
     }
     const extracted = await extractEmbeddedRawPreview(rawBuffer);
     if (!extracted) {

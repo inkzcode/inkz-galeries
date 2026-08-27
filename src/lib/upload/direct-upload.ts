@@ -24,14 +24,23 @@ export async function putDirect(uploadUrl: string, file: File, contentType: stri
   }
 }
 
+// `shouldStop` (retour d'Enzo, 2026-08-27 : "que ça me bloque tout de
+// suite au lieu de tester toutes les photos [...] et donc échouer
+// toutes") — vérifié avant CHAQUE nouvel élément, pas seulement au
+// démarrage : un worker qui détecte l'arrêt en cours de lot ne prend plus
+// de nouvelle photo, mais celles déjà en vol se terminent normalement (on
+// ne coupe jamais un envoi déjà commencé). Optionnel, jamais d'arrêt par
+// défaut — n'affecte aucun appelant existant.
 export async function runWithConcurrency<T>(
   items: T[],
   limit: number,
   task: (item: T) => Promise<void>,
+  shouldStop?: () => boolean,
 ): Promise<void> {
   let index = 0;
   async function worker() {
     while (index < items.length) {
+      if (shouldStop?.()) return;
       const current = items[index];
       index += 1;
       await task(current);

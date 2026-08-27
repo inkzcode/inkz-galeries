@@ -2762,6 +2762,53 @@ dans un vrai navigateur** : aucune galerie avec photos réelles ni session
 d'accès client montée dans cet environnement pour cliquer dessus pour de
 vrai. À vérifier par Enzo au prochain vrai test.
 
+## 6quadragies. Import de photos bloqué tout de suite au quota B2 dépassé (2026-08-27)
+
+Retour direct d'Enzo sur le bug déjà documenté au §6trigies point "B2
+daily cap exceeded" : à l'époque, traité comme un problème de compte à
+attendre, pas comme un bug de code à corriger. Sa demande précise cette
+fois : "que ça me bloque tout de suite au lieu de tester toutes les
+photos et donc échouer toutes" — un import de 100+ RAW qui tape sur le
+quota épuisé faisait échouer chaque photo une par une (avec les 3
+tentatives de `getObjectBufferWithRetry` à chaque fois, ~2,6s perdues par
+photo pour rien).
+
+- `lib/storage/errors.ts` (nouveau) — `isStorageCapExceeded()`, détection
+  volontairement large (`AccessDenied` + le mot "cap" quelque part dans
+  le message) plutôt qu'une correspondance exacte fragile : le texte
+  précis renvoyé par l'API compatible S3 de Backblaze pour ce cas n'est
+  pas documenté officiellement (recherché avant de coder — seule l'API
+  native documente le code `cap_exceeded`). **Pas reproduit dans cet
+  environnement** (pas de vraies clés B2 ici) — à confirmer par Enzo au
+  prochain vrai dépassement ; resserrer la détection si elle se déclenche
+  à tort ou pas du tout.
+- `getObjectBufferWithRetry` (`photos-actions.ts`) — sort de la boucle de
+  tentatives dès qu'un quota dépassé est détecté, au lieu d'épuiser les 3
+  essais pour rien.
+- `runWithConcurrency` (`lib/upload/direct-upload.ts`) — nouveau
+  paramètre optionnel `shouldStop`, vérifié avant chaque nouvel élément
+  (jamais un envoi déjà en vol n'est coupé) ; rétrocompatible, l'autre
+  appelant (`direct-final-upload.ts`) n'est pas affecté.
+- `uploadPhotosDirectly` (`direct-photo-upload.ts`) — dès qu'UNE photo
+  signale `capExceeded`, plus aucune nouvelle photo ne démarre. Avec 5
+  envois en parallèle, quelques-unes déjà en vol au moment de la
+  détection échouent quand même individuellement — inévitable avec du
+  parallélisme, mais un lot de 100+ ne finit plus par échouer en entier
+  un par un. Les photos jamais même tentées sont regroupées avec les
+  échecs (raison distincte "Pas tentée — import arrêté...") pour rester
+  couvertes par le bouton "Réessayer" existant, sans nouveau concept UI.
+- `photo-upload-form.tsx` — bandeau dédié, rouge, explicite ("Quota
+  Backblaze du jour dépassé... réessayez après minuit") au-dessus de la
+  liste d'échecs ; bouton "Réessayer" masqué dans ce cas précis (retenter
+  tout de suite échouerait à nouveau, inutile de le proposer).
+
+Vérifié : nouveau `lib/storage/errors.test.ts` (5 cas, y compris qu'une
+`AccessDenied` sans rapport avec un quota n'est PAS confondue avec un
+quota dépassé), `tsc`/`eslint`/86 tests (81+5)/build de production
+complet tous propres. **Le déclenchement réel reste à valider par Enzo**
+— la détection elle-même n'a pas pu être testée contre une vraie réponse
+B2 de quota dépassé dans cet environnement.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

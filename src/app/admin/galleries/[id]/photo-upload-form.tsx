@@ -25,9 +25,9 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
   const [, startTransition] = useTransition();
   const [pending, setPending] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
-  const [state, setState] = useState<{ imported: number; unmatched: UploadFailure[] } | undefined>(
-    undefined,
-  );
+  const [state, setState] = useState<
+    { imported: number; unmatched: UploadFailure[]; capExceeded: boolean } | undefined
+  >(undefined);
 
   const [originals, setOriginals] = useState<File[]>([]);
   const [previews, setPreviews] = useState<File[]>([]);
@@ -221,6 +221,17 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
         </button>
       )}
 
+      {state && state.capExceeded && (
+        <div className="rounded-md border border-danger bg-danger/5 p-4 text-sm">
+          <p className="font-medium text-danger">Quota Backblaze du jour dépassé (1 Go)</p>
+          <p className="mt-1 text-ink-soft">
+            L&apos;import s&apos;est arrêté tout de suite plutôt que de faire échouer chaque photo
+            restante une par une. Réessayez après minuit (heure de reset du quota) — les photos
+            non importées restent listées ci-dessous, prêtes à renvoyer.
+          </p>
+        </div>
+      )}
+
       {state && (state.imported > 0 || state.unmatched.length > 0) && (
         <div className="rounded-md border border-border bg-surface p-4 text-sm">
           {state.imported > 0 && (
@@ -233,7 +244,7 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
             <div className={state.imported > 0 ? "mt-2" : undefined}>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-danger">Échec pour :</p>
-                {!pending && (
+                {!pending && !state.capExceeded && (
                   <button
                     type="button"
                     onClick={handleRetryFailed}

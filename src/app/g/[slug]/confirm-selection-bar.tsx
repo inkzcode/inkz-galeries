@@ -47,7 +47,7 @@ export function ConfirmSelectionBar({
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-paper/95 backdrop-blur-sm">
+      <div className="fixed inset-x-0 bottom-0 bg-paper/95 shadow-[0_-8px_24px_-18px_rgba(20,20,20,0.25)] backdrop-blur-sm">
         <div className="relative mx-auto max-w-5xl px-4 py-4 text-sm sm:px-6">
           <SendBurst triggerKey={sendTriggerKey} />
           {locked ? (

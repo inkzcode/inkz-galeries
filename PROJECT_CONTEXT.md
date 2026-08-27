@@ -2933,6 +2933,66 @@ propres. Changement purement visuel (même Server Action, même
 comportement) — pas de nouveau risque fonctionnel à tester au-delà de ce
 qui l'était déjà au §6unetquadragies.
 
+## 6quatretquadragies. Refonte éditoriale de la page principale de galerie (2026-08-27)
+
+Requête la plus détaillée d'Enzo à ce jour (~20 points structurés), avec
+une exigence explicite en fin de brief : lui proposer la composition
+avant de coder, pas l'implémenter directement. Proposition envoyée
+(rupture visuelle identifiée entre home et galerie, composition en 5
+temps), validée telle quelle ("Oui, vas-y").
+
+**Portée stricte, comme demandé** : uniquement `gallery-view.tsx`
+(en-tête + grille + transition) et `raw-disclaimer.tsx` (mise en page
+seulement). Lightbox, panneau de remarques, annotations, philosophie de
+retouche, messages image de soi : **non touchés**, ni dans leur
+fonctionnement ni dans leur design.
+
+- **Nouveau `gallery-header.tsx`** — remplace le petit bloc titre/
+  description par une ouverture à deux zones asymétriques (même
+  principe que le hero de la home, `grid-cols-[1.2fr_1fr]`) : kicker
+  discret (date du shooting si renseignée, sinon "Votre galerie
+  privée"), titre en très grand (`text-5xl` → `text-7xl` selon l'écran,
+  contre `text-3xl/4xl` avant), et la PREMIÈRE photo du shooting en
+  grand format comme image d'ouverture — volontairement aussi présente
+  dans la grille plus bas (répétition normale dans un lookbook, pas un
+  bug). Le filigrane légal passe en toute petite mention en bas de
+  cette section, jamais en concurrence avec le titre.
+- **`PublicGallery` DTO étendu** (`public-gallery-service.ts`) —
+  `shootingDate` ajouté (le champ existait déjà sur `Gallery`, jamais
+  exposé côté client avant) : nécessaire pour le kicker de date. Aucune
+  donnée sensible ajoutée (contrairement à `clientName`/`clientEmail`,
+  qui restent strictement absents du DTO public).
+- **`raw-disclaimer.tsx` restylé, texte STRICTEMENT intact** — retour
+  d'Enzo explicite : "ne modifie pas mes textes [...] le problème est sa
+  mise en scène". Vérifié mot pour mot en écrivant le nouveau fichier :
+  mêmes phrases, mêmes `<strong>` aux mêmes endroits, seuls les
+  conteneurs/tailles/espacements changent (d'un encadré `border-l-2
+  border-accent-tint text-sm` façon notice, vers une colonne éditoriale
+  large de lecture confortable, légèrement décalée, avec une fine règle
+  or au lieu d'une bordure).
+- **Transition calme avant la grille** — une ligne "X photographies · Y
+  sélectionnées", rien de plus (règle explicite du brief : "il suffit de
+  rendre immédiatement compréhensible combien de photos [...] pas
+  besoin de répéter énormément d'informations").
+- **Grille allégée** — espacement augmenté (`gap-4`→`gap-6`,
+  `mb-4`→`mb-6`), fond `bg-surface` retiré des tuiles (inutile, la photo
+  le couvre toujours — gardé uniquement sur le placeholder "Aperçu
+  indisponible", qui lui en a besoin).
+- **Barre de sélection allégée** — `border-t border-border` (trait dur)
+  remplacé par une ombre douce vers le haut, sans changer sa structure
+  ni son comportement (brief : "ne doit pas couper brutalement la
+  galerie avec un énorme rectangle gris").
+- **Cœur de sélection, lightbox, panneau de remarques** — strictement
+  inchangés, comme demandé.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. **Pas de vérification visuelle en direct dans un navigateur** —
+aucune galerie de test avec de vraies photos et un accès client valide
+montée dans cet environnement (même limite que les sessions précédentes,
+voir §6unetquadragies et antérieurs). Composition vérifiée uniquement par
+lecture de code — premier vrai retour visuel à attendre d'Enzo sur le
+déploiement réel.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

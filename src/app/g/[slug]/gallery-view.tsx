@@ -9,9 +9,9 @@ import { Lightbox } from "./lightbox";
 import { DrawingOverlay, type DraftNote } from "./drawing-overlay";
 import { summarizeSelection } from "@/lib/domain/selection-summary";
 import { colorForNoteIndex } from "@/lib/domain/note-colors";
-import { WATERMARK_DISCLAIMER } from "@/lib/domain/watermark-policy";
 import type { DrawingPoint, PublicGallery } from "@/lib/services/public-gallery-service";
 import { RawDisclaimer } from "./raw-disclaimer";
+import { GalleryHeader } from "./gallery-header";
 import { HeartButton } from "./heart-button";
 
 const EASE = [0.2, 0.7, 0.3, 1] as const;
@@ -137,24 +137,23 @@ export function GalleryView({
 
   return (
     <div className="pb-28">
-      <motion.header
-        className="mx-auto max-w-6xl px-4 pt-12 pb-8 sm:px-6"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="font-serif text-3xl font-bold text-ink sm:text-4xl">{gallery.title}</h1>
-        {gallery.description && (
-          <p className="mt-2 max-w-xl text-ink-soft">{gallery.description}</p>
-        )}
-        {gallery.watermarkLevel !== "NONE" && (
-          <p className="mt-4 text-xs text-faint">{WATERMARK_DISCLAIMER}</p>
-        )}
-        {gallery.retouchPhilosophyEnabled && <RawDisclaimer />}
-      </motion.header>
+      <GalleryHeader gallery={gallery} coverPhoto={viewablePhotos[0] ?? null} />
+
+      {gallery.retouchPhilosophyEnabled && <RawDisclaimer />}
+
+      {/* Transition calme avant la grille (retour d'Enzo, 2026-08-27) —
+          juste le compte, rien de plus ; les photos deviennent le produit
+          principal à partir d'ici. */}
+      <div className="mx-auto max-w-6xl px-4 pb-6 sm:px-6">
+        <p className="text-sm text-muted tabular-nums">
+          {photos.length} photographie{photos.length > 1 ? "s" : ""}
+          {selectedCount > 0 &&
+            ` · ${selectedCount} sélectionnée${selectedCount > 1 ? "s" : ""}`}
+        </p>
+      </div>
 
       <motion.div
-        className="mx-auto max-w-6xl columns-1 gap-4 px-4 sm:columns-2 sm:px-6 lg:columns-3"
+        className="mx-auto max-w-6xl columns-1 gap-6 px-4 sm:columns-2 sm:px-6 lg:columns-3"
         variants={grid}
         initial="hidden"
         animate="show"
@@ -163,7 +162,7 @@ export function GalleryView({
           <motion.div
             key={photo.id}
             variants={tile}
-            className="group relative mb-4 break-inside-avoid overflow-hidden rounded-md bg-surface"
+            className="group relative mb-6 break-inside-avoid overflow-hidden rounded-md"
           >
             {photo.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- URLs de preview signées/locales, voir storage/README.md
@@ -179,7 +178,7 @@ export function GalleryView({
                 className="h-auto w-full cursor-pointer object-cover transition-transform duration-500 group-hover:scale-[1.015]"
               />
             ) : (
-              <div className="flex aspect-[3/2] w-full items-center justify-center text-xs text-muted">
+              <div className="flex aspect-[3/2] w-full items-center justify-center bg-surface text-xs text-muted">
                 Aperçu indisponible
               </div>
             )}

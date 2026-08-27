@@ -35,6 +35,7 @@ export type PublicGallery = PricingConfig & {
   slug: string;
   title: string;
   description: string | null;
+  shootingDate: Date | null;
   watermarkLevel: WatermarkLevelValue;
   status: GalleryStatusValue;
   selectionLockedAt: Date | null;
@@ -71,6 +72,7 @@ export async function getPublicGalleryBySlug(slug: string): Promise<PublicGaller
       slug: true,
       title: true,
       description: true,
+      shootingDate: true,
       watermarkLevel: true,
       status: true,
       pricingMode: true,
@@ -130,6 +132,7 @@ export async function getPublicGalleryBySlug(slug: string): Promise<PublicGaller
     slug: gallery.slug,
     title: gallery.title,
     description: gallery.description,
+    shootingDate: gallery.shootingDate,
     watermarkLevel: gallery.watermarkLevel,
     status: gallery.status,
     pricingMode: gallery.pricingMode,

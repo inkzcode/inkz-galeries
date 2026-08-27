@@ -213,28 +213,41 @@ export default async function GalleryDetailPage({
         </div>
       )}
 
+      {/* Bandeau visible pour revenir en arrière, plutôt qu'un petit lien
+          texte perdu dans une ligne (retour d'Enzo, 2026-08-27 : "je ne
+          trouve pas le bouton" — le lien existait mais était bien trop
+          discret). Même traitement visuel que le bandeau "paiement en
+          attente" juste au-dessus, pour être tout aussi impossible à
+          rater. */}
+      {selectionLocked && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3">
+          <p className="text-sm text-ink">
+            Sélection verrouillée — le client ne peut plus la modifier.
+          </p>
+          <form action={unlockSelectionAction.bind(null, gallery.id)}>
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-md border border-ink px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-ink hover:text-paper"
+            >
+              Revenir à la sélection
+            </button>
+          </form>
+        </div>
+      )}
+
       <RevealSection className="mt-10">
         {primary === "photos" ? (
           photosBlock
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-baseline gap-x-1 text-sm text-ink-soft">
-                <p>
-                  {selectedPhotos.length} photo{selectedPhotos.length > 1 ? "s" : ""} sélectionnée
-                  {selectedPhotos.length > 1 ? "s" : ""}
-                  {pricing.requiresPayment &&
-                    gallery.status !== "PAYMENT_PENDING" &&
-                    ` — ${(pricing.amountDueCents / 100).toFixed(2)} ${pricing.currency} dus`}
-                </p>
-                {selectionLocked && (
-                  <form action={unlockSelectionAction.bind(null, gallery.id)}>
-                    <button type="submit" className="underline decoration-border hover:text-ink">
-                      · revenir à la sélection
-                    </button>
-                  </form>
-                )}
-              </div>
+              <p className="text-sm text-ink-soft">
+                {selectedPhotos.length} photo{selectedPhotos.length > 1 ? "s" : ""} sélectionnée
+                {selectedPhotos.length > 1 ? "s" : ""}
+                {pricing.requiresPayment &&
+                  gallery.status !== "PAYMENT_PENDING" &&
+                  ` — ${(pricing.amountDueCents / 100).toFixed(2)} ${pricing.currency} dus`}
+              </p>
               <SelectionExport
                 filenameList={buildFilenameList(selectedPhotos)}
                 csv={buildFilenameCsv(selectedPhotos)}

@@ -2908,6 +2908,31 @@ lecture de code (changement d'une ligne, comportement direct) — pas
 cliqué en conditions réelles avec un vrai échec d'import puis un retry
 réussi, faute d'environnement B2 réel ici.
 
+## 6tretquadragies. Le bouton de retour à la sélection était introuvable (2026-08-27)
+
+Retour immédiat d'Enzo sur le correctif du §6unetquadragies : "je ne
+trouve pas le bouton « revenir à la sélection »". Le bouton existait
+bien et fonctionnait — le vrai problème était sa DISCRÉTION : un simple
+lien texte souligné ("· revenir à la sélection"), noyé au milieu d'une
+ligne de texte gris clair ("X photos sélectionnées · revenir à la
+sélection"), sans le moindre contraste visuel. Un bug de conception
+d'interface plus qu'un bug de code — corrigé en changeant le TRAITEMENT,
+pas la logique.
+
+Remplacé par un bandeau à part entière, même style que le bandeau
+"paiement en attente" déjà existant juste au-dessus (bordure, fond
+distinct, vrai bouton) — impossible à rater en arrivant sur la page :
+"Sélection verrouillée — le client ne peut plus la modifier" + bouton
+"Revenir à la sélection". Affiché indépendamment de `primary`
+(shootings/retouche) plutôt que niché dans une seule des deux branches
+d'affichage — légèrement plus robuste, aucune régression possible liée à
+l'état d'affichage courant de la page.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Changement purement visuel (même Server Action, même
+comportement) — pas de nouveau risque fonctionnel à tester au-delà de ce
+qui l'était déjà au §6unetquadragies.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

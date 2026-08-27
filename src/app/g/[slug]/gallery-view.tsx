@@ -170,9 +170,26 @@ export function GalleryView({
   // UNIQUEMENT (jamais côté vrai client — ce serait montrer un faux
   // visuel), une image qui échoue est remplacée par un aperçu générique,
   // juste pour voir le rythme de la grille.
-  function handleImageError(event: React.SyntheticEvent<HTMLImageElement>) {
+  //
+  // Suivi en état React (pas juste `event.currentTarget.src` comme au
+  // premier jet) — retour d'Enzo, 2026-08-28 : "le logo Inkz apparaît
+  // bien côté grille mais quand on clique sur une image pour voir la
+  // fenêtre de détail elle ne s'affiche plus". Cause réelle : la
+  // visionneuse (lightbox.tsx) recharge la MÊME url d'origine dans un
+  // <img> totalement séparé de celui de la grille — un simple swap du
+  // DOM de la grille ne la corrige donc pas. En gardant la liste des
+  // photos en échec ici, `effectiveSrc` peut fournir directement le
+  // repli à la grille ET à la visionneuse.
+  const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
+
+  function handleImageError(photoId: string) {
     if (!isPreview) return;
-    event.currentTarget.src = "/photo-placeholder-landscape.png";
+    setBrokenPhotoIds((prev) => (prev.has(photoId) ? prev : new Set(prev).add(photoId)));
+  }
+
+  function effectiveSrc(photo: { id: string; previewUrl: string | null }): string | null {
+    if (isPreview && brokenPhotoIds.has(photo.id)) return "/photo-placeholder-landscape.png";
+    return photo.previewUrl;
   }
 
   return (
@@ -236,10 +253,10 @@ export function GalleryView({
             {photo.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- URLs de preview signées/locales, voir storage/README.md
               <img
-                src={photo.previewUrl}
+                src={effectiveSrc(photo) ?? undefined}
                 alt=""
                 onClick={() => openLightbox(viewablePhotos.findIndex((p) => p.id === photo.id))}
-                onError={handleImageError}
+                onError={() => handleImageError(photo.id)}
                 style={
                   photo.width && photo.height
                     ? { aspectRatio: `${photo.width} / ${photo.height}` }
@@ -274,7 +291,7 @@ export function GalleryView({
       </motion.div>
 
       <Lightbox
-        photos={viewablePhotos.map((photo) => ({ id: photo.id, src: photo.previewUrl! }))}
+        photos={viewablePhotos.map((photo) => ({ id: photo.id, src: effectiveSrc(photo)! }))}
         index={openIndex}
         onClose={closeLightbox}
         onNavigate={(newIndex) => openLightbox(newIndex)}
@@ -290,9 +307,16 @@ export function GalleryView({
           )
         }
         sidePanel={
+          // Pas de `key={openPhoto.id}` ici (retiré le 2026-08-28) — un
+          // remontage complet à chaque photo empêchait l'animation de
+          // hauteur de la carte (lightbox.tsx, `motion.div layout`) de
+          // se dérouler proprement : Framer Motion perdait le fil entre
+          // l'ancien et le nouveau DOM, laissant la carte visuellement
+          // "coincée" à mi-transition. `PhotoNotesPanel` réinitialise
+          // maintenant son état interne lui-même via un effet sur
+          // `photoId` (voir photo-notes-panel.tsx).
           openPhoto && (
             <PhotoNotesPanel
-              key={openPhoto.id}
               gallerySlug={gallery.slug}
               photoId={openPhoto.id}
               notes={openPhoto.notes}

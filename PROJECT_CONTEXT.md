@@ -3342,6 +3342,97 @@ Rendu réel confirmé via `get_page_text` + `getComputedStyle` (voir
 ci-dessus) — pas une capture d'écran pixel, mais une vérification
 beaucoup plus poussée que le tour précédent.
 
+## 6cinquante-et-unièmes. Animation de hauteur de la visionneuse + logo Inkz absent dans la fenêtre de détail admin (2026-08-28)
+
+Deux retours après §6cinquantièmes : (1) "il manque vraiment des
+animations quand [...] tu passes à la page d'après la fenêtre reste
+complètement figé [...] pareil pour ajouter à mes favoris, pareil pour
+les à garder en tête vu qu'ils ne font pas du tout tous la même hauteur
+[...] il faudrait faire un truc hyper smooth comme si il s'étendait ou
+se rapetissait" ; (2) "les photos du logo Inkz [...] apparaissent bien
+dans la simulation côté client [...] mais quand on clique sur une image
+pour voir la fenêtre de détail elle s'affiche plus".
+
+**Bug n°2 — vrai bug d'architecture, corrigé.** La grille (`gallery-view.tsx`)
+gérait l'échec d'image en mutant DIRECTEMENT le DOM
+(`event.currentTarget.src = ...`), un correctif purement visuel invisible
+à toute autre partie de l'app. La visionneuse (`lightbox.tsx`) affiche la
+MÊME photo dans un `<img>` totalement différent, construit à partir de
+`photo.previewUrl` — la même URL cassée, retentée indépendamment, sans
+repli. Corrigé en remontant l'état "en échec" au niveau React
+(`brokenPhotoIds: Set<string>` + `effectiveSrc(photo)`) : la grille ET la
+liste passée à `<Lightbox>` calculent maintenant la même URL effective à
+partir de la même source de vérité. Vérifié en conditions contrôlées
+(page de test temporaire, voir plus bas) : déclenchement de l'échec sur
+la grille, puis ouverture de cette même photo dans la visionneuse —
+confirmé, le logo Inkz s'affiche bien dans les deux.
+
+**Bug n°1 — hauteur figée, corrigé, plus une vraie leçon d'architecture
+sur `layout` de Framer Motion.** `PhotoNotesPanel` se démontait et se
+remontait entièrement à chaque photo (`key={openPhoto.id}`, ajouté au
+tour précédent pour repartir d'un état interne propre). Premier essai de
+correctif : poser `layout` (animation automatique de hauteur) sur la
+carte parente dans `lightbox.tsx`. Résultat mesuré (`getBoundingClientRect`
+vs `scrollHeight` du panneau, avant/après changement de photo) : la carte
+restait bloquée à mi-transition, visuellement écrasée
+(`transform: scale(1, 0.74)`), sans jamais atteindre sa vraie taille —
+le remontage du contenu pendant l'animation casse le suivi interne de
+Framer Motion (le FLIP ne peut pas suivre un enfant qui disparaît et
+réapparaît en cours de route).
+
+Corrigé en SUPPRIMANT le remontage : `key` retiré de `<PhotoNotesPanel>`
+(gallery-view.tsx), l'état interne (messages modifiés, remarques en
+cours de suppression, erreur, "touched") est maintenant réinitialisé
+**pendant le rendu** quand `photoId` change (comparaison avec un
+`photoId` précédent stocké en state) plutôt que dans un `useEffect` —
+suivant explicitement la recommandation React "ajuster un état quand une
+prop change" : un effet tournerait un tick trop tard et laisserait
+apparaître une frame avec l'état de l'ancienne photo ; `eslint-plugin-react-hooks`
+a d'ailleurs rejeté la première version en effet
+(`react-hooks/set-state-in-effect`). `layout` sur la carte parente peut
+maintenant suivre un contenu qui reste monté en continu — le remontage
+était la vraie cause, pas `layout` lui-même. Même traitement sur la
+carte photo (paysage vs portrait changent aussi sa hauteur).
+
+**Limite de vérification rencontrée** — l'environnement de ce tour ne
+permet pas de confirmer visuellement qu'une animation `layout` se
+déroule bien jusqu'au bout : le Browser pane n'étant pas affiché côté
+utilisateur, chaque onglet reste "en arrière-plan" pour Chrome
+(`document.hidden === true`), qui throttle alors `requestAnimationFrame`
+— TOUTES les animations Framer Motion en pâtissent, pas seulement la
+nouvelle. Vérifié en comparant : le fondu d'entrée de la photo dans la
+visionneuse (animation déjà existante, jamais touchée, dont le bon
+fonctionnement est confirmé depuis des tours précédents) était LUI AUSSI
+figé à son état de départ (`opacity: 0`) dans les mêmes conditions de
+test — preuve que le blocage observé est un artefact de l'environnement
+de test, pas un bug introduit ici. La correction (suppression du
+remontage) reste néanmoins un vrai bug résolu, indépendamment de la
+question de l'animation : sans elle, `layout` ne peut structurellement
+pas fonctionner, remontage ou pas.
+
+**Méthode** — même page de test temporaire que §6cinquantièmes
+(`src/app/dev-lightbox-preview/`, jamais commitée, supprimée avant ce
+commit), enrichie avec une photo à l'URL volontairement cassée et deux
+messages "à garder en tête" de longueurs très différentes. Le
+déclenchement d'erreur réel du navigateur s'est révélé trop rapide pour
+une URL locale inexistante (échoue avant que React n'ait fini
+d'hydrater — un `error` DOM qui se déclenche avant l'attache des
+gestionnaires React peut être perdu) ; contourné en déclenchant l'erreur
+manuellement (`dispatchEvent(new Event('error'))`) pour tester le VRAI
+scénario rapporté (photo déjà connue en échec, puis ouverture dans la
+visionneuse) plutôt que la course de vitesse artificielle de ce test.
+Ce racing n'a pas été observé par Enzo en conditions réelles (URLs B2
+signées, plus lentes qu'un 404 local) — non corrigé ici pour rester
+strictement dans le périmètre de ce qui a été demandé.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Le bug n°2 (logo Inkz absent dans la visionneuse) est confirmé
+corrigé par un test structurel réel (pas juste une lecture de code). Le
+bug n°1 (hauteur figée) est corrigé à la racine (plus de remontage) mais
+le résultat visuel final (la fluidité de l'animation elle-même) reste à
+confirmer par Enzo en conditions réelles — hors de portée de vérification
+dans cet environnement pour les raisons expliquées ci-dessus.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

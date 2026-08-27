@@ -95,9 +95,10 @@ export function Lightbox({
               className="flex flex-col gap-6 lg:flex-row lg:items-start"
               onClick={(event) => event.stopPropagation()}
             >
-              {/* Carte photo */}
+              {/* Carte photo — `layout` lisse aussi le changement de
+                  hauteur entre une photo portrait et une photo paysage. */}
               <div className="flex flex-1 flex-col gap-4">
-                <div className="relative mx-auto">
+                <motion.div layout transition={{ duration: 0.35, ease: [0.2, 0.7, 0.3, 1] }} className="relative mx-auto">
                   <div className="overflow-hidden rounded-2xl bg-ink shadow-sm">
                     <AnimatePresence mode="wait">
                       <motion.img
@@ -146,7 +147,7 @@ export function Lightbox({
                       ›
                     </motion.button>
                   )}
-                </div>
+                </motion.div>
 
                 {children}
 
@@ -176,10 +177,25 @@ export function Lightbox({
                 </motion.button>
               </div>
 
+              {/* `layout` anime tout changement de hauteur de cette carte
+                  (citation "à garder en tête" plus ou moins longue d'une
+                  photo à l'autre, bouton "favoris" qui apparaît/disparaît)
+                  — retour d'Enzo, 2026-08-28 : "la fenêtre reste
+                  complètement figée [...] il faudrait un truc hyper
+                  smooth comme si il s'étendait ou se rapetissait".
+                  `PhotoNotesPanel` se démonte/remonte à chaque photo (son
+                  propre état interne doit repartir de zéro), donc c'est
+                  CETTE carte qui doit porter l'animation, pas son
+                  contenu — `layout` la détecte même à travers un
+                  remontage de ses enfants. */}
               {sidePanel && (
-                <div className="w-full shrink-0 overflow-hidden rounded-2xl border border-border bg-paper shadow-sm lg:w-[400px]">
+                <motion.div
+                  layout
+                  transition={{ duration: 0.35, ease: [0.2, 0.7, 0.3, 1] }}
+                  className="w-full shrink-0 overflow-hidden rounded-2xl border border-border bg-paper shadow-sm lg:w-[400px]"
+                >
                   {sidePanel}
-                </div>
+                </motion.div>
               )}
             </div>
           </div>

@@ -88,6 +88,22 @@ export function PhotoNotesPanel({
   // l'animation "s'en va vers le photographe" sans logique show/hide ici.
   const [sendTriggerKey, setSendTriggerKey] = useState(0);
 
+  // Ce panneau ne se démonte plus à chaque changement de photo (retiré
+  // le 2026-08-28 — voir gallery-view.tsx : un remontage complet cassait
+  // l'animation de hauteur de la carte parente). Son état local doit
+  // donc être réinitialisé explicitement ici — pendant le rendu (pattern
+  // documenté par React pour "ajuster un état quand une prop change"),
+  // PAS dans un `useEffect` : un effet tourne un tick trop tard et
+  // laisserait apparaître l'état de l'ancienne photo pendant une frame.
+  const [prevPhotoId, setPrevPhotoId] = useState(photoId);
+  if (photoId !== prevPhotoId) {
+    setPrevPhotoId(photoId);
+    setEditedMessages({});
+    setDeletingIds(new Set());
+    setError(null);
+    setTouched(false);
+  }
+
   const dirtyEntries = Object.entries(editedMessages).filter(
     ([noteId, message]) => message !== (notes.find((n) => n.id === noteId)?.message ?? ""),
   );
@@ -153,6 +169,14 @@ export function PhotoNotesPanel({
   const isEmpty = notes.length === 0 && drafts.length === 0;
 
   return (
+    // Div simple, pas `motion` (retour d'Enzo, 2026-08-28 : "la fenêtre
+    // reste complètement figée [...] un truc hyper smooth comme si il
+    // s'étendait ou se rapetissait") — le changement de HAUTEUR entre
+    // deux photos (citation plus ou moins longue, bouton favoris qui
+    // apparaît/disparaît) est porté par la carte PARENTE (lightbox.tsx,
+    // `motion.div layout`), qui a besoin que ce contenu reste monté en
+    // continu pour animer proprement — un remontage ici (comme au
+    // premier essai) casse le suivi de Framer Motion à mi-animation.
     <div className="flex flex-col">
       {/* Bloc éditorial — grand guillemet décoratif rouge, texte en serif,
           dernière phrase mise en avant en italique/rouge (point 7 du

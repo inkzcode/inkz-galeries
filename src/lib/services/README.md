@@ -57,12 +57,27 @@ Fichiers existants :
   `filename`/`finalKey`, pour `g/[slug]/download-all/route.ts` — pas d'URL
   signée à générer pour un fichier qui va être lu côté serveur puis
   streamé dans un zip, pas transmis tel quel au client).
-- `payment-service.ts` — `markPaymentReceived()` : pas de Stripe réel
-  (brief §16), enregistre juste qu'un paiement a été constaté par un autre
-  moyen (`Payment.provider = null`) et fait avancer le statut
-  `PAYMENT_PENDING → TO_RETOUCH`. Sans ce fichier, une galerie payante
-  restait bloquée indéfiniment après confirmation — voir
-  PROJECT_CONTEXT.md §6octies point 1.
+- `payment-service.ts` — `markPaymentReceived()` : enregistre qu'un
+  paiement a été constaté par un autre moyen que Stripe (virement,
+  espèces... `Payment.provider = null`) et fait avancer le statut
+  `PAYMENT_PENDING → TO_RETOUCH`. Reste le filet de sécurité manuel côté
+  admin, INDÉPENDANT de `stripe-service.ts` — ne jamais lui ajouter de
+  dépendance à Stripe. Sans ce fichier, une galerie payante restait
+  bloquée indéfiniment après confirmation — voir PROJECT_CONTEXT.md
+  §6octies point 1.
+- `stripe-service.ts` (2026-08-28) — vrai paiement en ligne, formulaire de
+  carte intégré à la galerie (Stripe Payment Element, pas de redirection).
+  `createOrReusePaymentIntent()` : crée ou réutilise un PaymentIntent pour
+  la galerie (évite les doublons si le client recharge la page en pleine
+  saisie de carte — voir `lib/domain/payment-intent-policy.ts` pour la
+  logique pure de décision). `confirmStripePayment()` : SEUL point
+  d'entrée qui fait avancer le statut d'un paiement Stripe
+  (`PAYMENT_PENDING → TO_RETOUCH`), appelé uniquement par le webhook
+  (`app/api/stripe-webhook/route.ts`) — jamais par le client seul, qui
+  peut fermer l'onglet juste après un paiement réussi. `getStripeClient()`
+  se dégrade en douceur (comme Resend) si `STRIPE_SECRET_KEY`/
+  `STRIPE_WEBHOOK_SECRET` sont absents : le paiement en ligne n'est
+  simplement pas proposé, `payment-service.ts` reste disponible.
 - `portfolio-service.ts` — `listPortfolioEntries()` : DTO explicite pour la
   page publique `/portfolio` (même principe que
   `public-gallery-service.ts`), fusionne DEUX sources triées ensemble par

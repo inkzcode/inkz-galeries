@@ -3464,6 +3464,106 @@ sans ça. Pas encore signalé comme bloquant : à vérifier avec Enzo s'il a
 un domaine (ex. inkz.fr) à connecter, ou si `onboarding@resend.dev`
 suffit pour l'instant vu le volume attendu.
 
+**Suite le même jour** — Enzo confirme que `inkz.fr` est bien son
+domaine et partage une capture d'écran des enregistrements DNS Resend
+(DKIM en TXT, SPF en 2 CNAME vers `forge.rmta.net`, DMARC optionnel).
+Enregistrements confirmés cohérents avec le format standard Resend — pas
+encore ajoutés côté registraire au moment d'écrire ceci (Enzo n'a pas
+l'accès sous la main), en attente.
+
+## 6cinquante-troisièmes. Paiement Stripe réel — formulaire de carte intégré à la galerie (2026-08-28)
+
+Brief validé avec Enzo après une session de questions (AskUserQuestion) :
+**Stripe**, **EUR uniquement**, et surtout — **formulaire de carte intégré
+à la galerie**, pas de redirection vers une page Stripe séparée ("dans
+l'absolue je préfèrerais ça"). Expliqué avant de coder : le composant
+officiel Stripe (Payment Element) garde les données de carte dans des
+iframes contrôlées par Stripe même quand il est visuellement intégré à
+la page — même périmètre de conformité (SAQ A) qu'une page hébergée, la
+différence est seulement le volume d'intégration côté code. Vu l'enjeu
+(argent réel), un vrai plan a été posé et validé (`EnterPlanMode`) avant
+d'écrire une ligne de code — deux agents d'exploration/conception ont
+cartographié l'architecture existante avant la conception.
+
+**Découverte clé** : le code avait été délibérément préparé pour ça —
+`GalleryStatus.PAYMENT_PENDING` existe déjà, et un modèle `Payment` en
+base a des champs `provider`/`providerPaymentId` commentés "prêt pour
+Stripe, rien de connecté". **Aucune migration Prisma n'a été
+nécessaire.**
+
+**Bug réel trouvé en préparant l'intégration** (indépendant de Stripe,
+déjà présent en prod) : `src/app/g/[slug]/page.tsx` rangeait
+`PAYMENT_PENDING` dans `WAITING_STATUSES`, qui affiche l'écran statique
+`WaitingView` — pas `GalleryView` (seul endroit où vit
+`ConfirmSelectionBar`). Concrètement : toute galerie payante déjà
+confirmée restait bloquée sur un écran "merci, reviens bientôt" sans
+aucun moyen de payer dès le prochain rafraîchissement de page. Corrigé
+au passage : `PAYMENT_PENDING` a maintenant sa propre branche vers un
+nouvel écran `PaymentView`.
+
+**Ce qui a été ajouté** (voir `src/lib/services/README.md` pour le détail
+de `stripe-service.ts`) :
+- `src/lib/services/stripe-service.ts` (nouveau) — `createOrReusePaymentIntent()`
+  (évite les PaymentIntent orphelins si le client recharge la page en
+  pleine saisie de carte), `confirmStripePayment()` (SEUL point d'entrée
+  qui fait avancer une galerie payée par Stripe — jamais le client seul,
+  qui peut fermer l'onglet juste après un paiement réussi), `markStripePaymentFailed()`.
+  `payment-service.ts` (le bouton admin "marquer comme reçu") **reste
+  entièrement inchangé** — le filet de sécurité manuel fonctionne que
+  Stripe soit configuré ou non.
+- `src/lib/domain/payment-intent-policy.ts` + test — logique pure
+  "réutiliser/recréer/réconcilier" extraite pour rester testable sans
+  compte Stripe réel (même principe que `gallery-status-machine.ts`).
+- `src/app/api/stripe-webhook/route.ts` (nouveau) — seule route sans
+  vérification `hasGalleryAccess`/`verifySession` de tout le projet : la
+  signature Stripe EST l'authentification ici.
+- Côté client : `payment-step.tsx` (le formulaire, monté soit dans la
+  modale de confirmation soit dans `payment-view.tsx` pour le retour
+  plus tard), `payment-view.tsx`, `payment-actions.ts`.
+  `confirm-selection-bar.tsx` modifié : quand la confirmation renvoie
+  `requiresPayment`, la MÊME modale reste ouverte, son contenu passe du
+  récapitulatif au formulaire de paiement — jamais de `router.refresh()`
+  déclenché par la modale elle-même dans ce cas, uniquement par le
+  polling de `payment-step.tsx` (qui attend que le webhook ait fait son
+  travail avant de considérer que c'est vraiment payé).
+- `.env.example` : `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+  `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (nouveau). "Stripe configuré" =
+  les trois présentes — une clé secrète sans secret de webhook créerait
+  des paiements qu'on ne pourrait jamais confirmer côté serveur.
+
+**Dégradation si Stripe n'est pas configuré** : le paiement en ligne
+n'est simplement pas proposé au client (message "contactez votre
+photographe"), `confirmSelection()` (confirm-selection-service.ts,
+non modifié) continue de basculer normalement vers `PAYMENT_PENDING`,
+et le bouton admin "marquer comme reçu" reste disponible sans aucune
+condition liée à Stripe.
+
+**Vérifié, cette fois avec une transaction réelle** — pas seulement la
+compilation :
+- `tsc`/`eslint`/90 tests (86 + 4 nouveaux pour `payment-intent-policy.ts`)/
+  build de production complet, tous propres.
+- Script jetable (`test-stripe-webhook-temp.ts`, à la racine, supprimé
+  après usage — absent de `git status`) : clés Stripe FACTICES posées
+  temporairement dans `.env.local` (aucun appel réseau Stripe réel,
+  `constructEvent` est une vérification HMAC locale) le temps du test,
+  puis retirées. A créé une VRAIE galerie/un VRAI paiement jetables en
+  base, envoyé une requête HTTP signée au VRAI serveur de dev en cours
+  d'exécution (`fetch()` vers `localhost:3000/api/stripe-webhook`, pas un
+  import direct de la route — `server-only` bloque ça hors du bundler
+  Next.js, confirmé en le testant), puis vérifié en relisant la base :
+  signature invalide → 400 ; évènement non géré → 200 sans effet ;
+  `payment_intent.succeeded` → galerie passée à `TO_RETOUCH`, `Payment`
+  passé à `PAID` avec `paidAt`, `StatusHistory` avec `changedBy: "SYSTEM"`
+  — tout confirmé correct. Nettoyage automatique en fin de script,
+  vérifié.
+- **Non vérifiable dans cet environnement** (nécessite un vrai compte
+  Stripe, même en mode test) : le vrai formulaire de carte à l'écran, le
+  parcours 3D Secure, une carte refusée, et la configuration du webhook
+  côté dashboard Stripe une fois déployé. Enzo doit créer un compte
+  Stripe (clés de test immédiates, aucune vérification d'entreprise
+  requise) — même blocage que pour Resend, impossible de créer un compte
+  tiers à sa place.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

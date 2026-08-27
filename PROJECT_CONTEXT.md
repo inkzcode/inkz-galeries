@@ -3137,6 +3137,51 @@ propres. Interprétation d'une capture d'écran sans texte — signalé comme
 tel dans la réponse à Enzo, pour qu'il corrige si le besoin réel était
 différent.
 
+## 6huitetquadragies. Le placeholder générique remplacé par le vrai visuel de marque Inkz (2026-08-27)
+
+Retour d'Enzo juste après §6septetquadragies, deux images collées dans le
+chat (un recadrage paysage et un recadrage portrait du logo/mascotte
+"Inkz Projects" sur fond crème avec dégradé rouge-or) : "alors non, je
+veux qu'on trouve une photo qui remplacerait toutes les photos comme les
+deux dernières photos dans mes téléchargements". Rejet explicite de
+l'icône SVG générique posée quelques minutes plus tôt — Enzo avait déjà
+les vrais fichiers (générés par lui via ChatGPT), enregistrés dans son
+dossier Téléchargements Windows.
+
+- **Fichiers retrouvés et confirmés identiques** aux deux images collées
+  (lecture directe des deux fichiers, comparaison visuelle) :
+  `ChatGPT Image 27 août 2026, 23_01_57.png` (paysage, dégradé bas-gauche)
+  et `ChatGPT Image 27 août 2026, 23_01_20.png` (portrait, dégradé
+  haut-droit) — accès direct au système de fichiers Windows d'Enzo, pas
+  un environnement bac-à-sable isolé.
+- **Copiés dans `public/`** sous deux noms clairs selon leur orientation :
+  `photo-placeholder-landscape.png` (~1,07 Mo) et
+  `photo-placeholder-portrait.png` (~1,55 Mo). `public/photo-placeholder.svg`
+  supprimé — plus aucune référence dans le code.
+- **Répartition par contexte d'usage**, pas un seul visuel unique partout :
+  - `gallery-header.tsx` (couverture de galerie, colonne haute et
+    étroite) → version **portrait**.
+  - `gallery-view.tsx` (`handleImageError`, tuiles de la grille en
+    masonry) → version **paysage**.
+  - `photo-thumbnail.tsx` (grille d'import admin, tuiles `aspect-[3/2]`)
+    → version **paysage**.
+  Le même principe de détection qu'en §6septetquadragies reste inchangé
+  (`onError`, strictement gardé par `isPreview` pour la galerie client —
+  jamais montré à un vrai client ; toujours actif sans condition côté
+  grille d'import admin, qui est un espace 100% photographe).
+- Poids des fichiers (~1-1,5 Mo chacun) assumé sans compression
+  supplémentaire : ce sont des `<img>` classiques (pas de pipeline
+  `next/image`), mais chaque URL n'est chargée qu'une fois par le
+  navigateur puis servie depuis son cache pour toutes les tuiles
+  suivantes qui partagent la même image de repli.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Les deux fichiers copiés confirmés servis (200) par le serveur
+de dev avec la bonne orientation (paysage 1491×1055, portrait 1055×1491).
+Le déclenchement réel du `onError` en conditions de quota B2 dépassé
+reste non testable dans cet environnement (pas de vraies clés B2 capées)
+— même limite déjà signalée en §6septetquadragies.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

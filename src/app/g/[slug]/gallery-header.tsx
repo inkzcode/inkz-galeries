@@ -59,7 +59,7 @@ export function GalleryHeader({
               src={coverPhoto.previewUrl}
               alt=""
               onError={(event) => {
-                if (isPreview) event.currentTarget.src = "/photo-placeholder.svg";
+                if (isPreview) event.currentTarget.src = "/photo-placeholder-portrait.png";
               }}
               style={
                 coverPhoto.width && coverPhoto.height

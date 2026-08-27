@@ -163,7 +163,7 @@ export function GalleryView({
   // juste pour voir le rythme de la grille.
   function handleImageError(event: React.SyntheticEvent<HTMLImageElement>) {
     if (!isPreview) return;
-    event.currentTarget.src = "/photo-placeholder.svg";
+    event.currentTarget.src = "/photo-placeholder-landscape.png";
   }
 
   return (

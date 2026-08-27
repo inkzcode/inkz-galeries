@@ -20,10 +20,12 @@ import { useState } from "react";
 //
 // Aperçu générique en fond (retour d'Enzo, 2026-08-27, capture d'écran
 // d'une galerie de 16 photos toutes en échec pendant un dépassement de
-// quota B2) — même fichier que l'aperçu admin de galerie
-// (photo-placeholder.svg), pour garder au moins le RYTHME de la grille
-// visible pendant que le quota est dépassé, plutôt qu'un bloc plat sans
-// aucun repère visuel. "Réessayer" reste au premier plan, inchangé.
+// quota B2 — puis refus du placeholder générique généré : "je veux qu'on
+// trouve une photo qui remplacerait toutes les photos comme les deux
+// dernières photos dans mes téléchargements") — le visuel de marque Inkz
+// (photo-placeholder-landscape.png), pour garder au moins le RYTHME de la
+// grille visible pendant que le quota est dépassé, plutôt qu'un bloc plat
+// sans aucun repère visuel. "Réessayer" reste au premier plan, inchangé.
 export function PhotoThumbnail({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
@@ -32,7 +34,7 @@ export function PhotoThumbnail({ src, alt }: { src: string; alt: string }) {
     return (
       <div
         className="relative flex aspect-[3/2] w-full flex-col items-center justify-center gap-1.5 bg-cover bg-center px-2 text-center"
-        style={{ backgroundImage: "url(/photo-placeholder.svg)" }}
+        style={{ backgroundImage: "url(/photo-placeholder-landscape.png)" }}
       >
         <div className="absolute inset-0 bg-paper/70" aria-hidden />
         <p className="relative text-xs font-medium text-danger">Aperçu indisponible</p>

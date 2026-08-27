@@ -9,10 +9,12 @@ import { Lightbox } from "./lightbox";
 import { DrawingOverlay, type DraftNote } from "./drawing-overlay";
 import { summarizeSelection } from "@/lib/domain/selection-summary";
 import { colorForNoteIndex } from "@/lib/domain/note-colors";
+import { WATERMARK_DISCLAIMER } from "@/lib/domain/watermark-policy";
 import type { DrawingPoint, PublicGallery } from "@/lib/services/public-gallery-service";
 import { RawDisclaimer } from "./raw-disclaimer";
 import { GalleryHeader } from "./gallery-header";
 import { HeartButton } from "./heart-button";
+import { BackLink } from "../../back-link";
 
 const EASE = [0.2, 0.7, 0.3, 1] as const;
 const grid: Variants = {
@@ -79,6 +81,16 @@ export function GalleryView({
   // désynchroniser la lightbox si une preview manque quelque part au
   // milieu de la grille.
   const viewablePhotos = photos.filter((photo) => photo.previewUrl);
+  // Couverture de l'ouverture de galerie (gallery-header.tsx) : une photo
+  // verticale d'abord si une existe (retour d'Enzo, 2026-08-27 : "ça rend
+  // beaucoup mieux") — la colonne de couverture est plus haute que large,
+  // une photo au format paysage y serait recadrée bizarrement. Retombe
+  // sur la première photo tout court si aucune verticale n'est présente,
+  // plutôt que de n'afficher aucune couverture.
+  const coverPhoto =
+    viewablePhotos.find((photo) => photo.width && photo.height && photo.height > photo.width) ??
+    viewablePhotos[0] ??
+    null;
   const openPhoto = openIndex !== null ? viewablePhotos[openIndex] : null;
   const drafts = openPhoto ? (draftsByPhoto[openPhoto.id] ?? []) : [];
   const nextColor = openPhoto
@@ -137,14 +149,32 @@ export function GalleryView({
 
   return (
     <div className="pb-28">
-      <GalleryHeader gallery={gallery} coverPhoto={viewablePhotos[0] ?? null} />
+      {/* Retour d'Enzo, 2026-08-27 : "un petit bouton pour retourner vers
+          le site une fois dans la galerie vu client" — même composant que
+          le reste de l'admin (back-link.tsx), pour rester discret. */}
+      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+        <BackLink href="/" label="Retour au site" />
+      </div>
+
+      <GalleryHeader gallery={gallery} coverPhoto={coverPhoto} />
 
       {gallery.retouchPhilosophyEnabled && <RawDisclaimer />}
+
+      {/* Filigrane légal (retour d'Enzo, 2026-08-27 : "il fait tache dans
+          la première impression") — déplacé du header vers ici, juste
+          avant les photos qu'il concerne, indépendamment de
+          `retouchPhilosophyEnabled` (c'est une mention légale, pas un
+          contenu éditorial optionnel). */}
+      {gallery.watermarkLevel !== "NONE" && (
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <p className="max-w-2xl text-xs text-faint">{WATERMARK_DISCLAIMER}</p>
+        </div>
+      )}
 
       {/* Transition calme avant la grille (retour d'Enzo, 2026-08-27) —
           juste le compte, rien de plus ; les photos deviennent le produit
           principal à partir d'ici. */}
-      <div className="mx-auto max-w-6xl px-4 pb-6 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 pt-6 pb-6 sm:px-6">
         <p className="text-sm text-muted tabular-nums">
           {photos.length} photographie{photos.length > 1 ? "s" : ""}
           {selectedCount > 0 &&

@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "motion/react";
-import { WATERMARK_DISCLAIMER } from "@/lib/domain/watermark-policy";
 import type { PublicGallery, PublicGalleryPhoto } from "@/lib/services/public-gallery-service";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
@@ -65,10 +64,6 @@ export function GalleryHeader({
           </motion.div>
         )}
       </div>
-
-      {gallery.watermarkLevel !== "NONE" && (
-        <p className="mt-8 text-xs text-faint">{WATERMARK_DISCLAIMER}</p>
-      )}
     </motion.header>
   );
 }

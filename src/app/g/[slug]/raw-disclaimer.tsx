@@ -10,12 +10,16 @@
 // mes textes [...] le problème est sa mise en scène") — TEXTE INTACT,
 // mot pour mot, mêmes emphases `<strong>` : seuls les conteneurs/tailles/
 // espacements changent, d'une notice en encadré (`border-l-2`, `text-sm`)
-// vers une vraie colonne éditoriale (largeur de lecture, léger décalage,
-// fine règle or plutôt qu'une bordure).
+// vers une vraie colonne éditoriale (largeur de lecture, fine règle or
+// plutôt qu'une bordure). Le décalage à droite (`lg:ml-[10%]`) essayé
+// dans ce premier jet a été retiré le même jour (retour d'Enzo : il
+// voulait ce bloc aligné verticalement avec le titre de gallery-header.tsx,
+// pas décalé) — même conteneur `max-w-6xl px-4 sm:px-6` que le header,
+// donc même bord gauche par défaut.
 export function RawDisclaimer() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-      <div className="max-w-2xl lg:ml-[10%]">
+      <div className="max-w-2xl">
         <span aria-hidden className="block h-px w-12 bg-accent-soft" />
         <p className="mt-6 font-serif text-2xl font-semibold text-ink sm:text-3xl">
           Avant de découvrir vos photos

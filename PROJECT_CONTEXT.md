@@ -3043,6 +3043,40 @@ supposition) ; correctif vérifié par lecture de code — la vraie
 confirmation reste le clic d'Enzo sur "Baptiste Port-Vendres" une fois
 déployé.
 
+## 6sixetquadragies. Quatre ajustements sur la refonte de galerie (2026-08-27)
+
+Premier vrai retour d'Enzo après avoir vu la refonte du §6quatretquadragies
+en conditions réelles ("Ca marche super merci !") — quatre ajustements
+ciblés, pas une remise en cause de la composition.
+
+- **Filigrane légal déplacé** — vivait en bas de `gallery-header.tsx`
+  ("il fait tache dans la première impression"), déplacé dans
+  `gallery-view.tsx`, juste avant les photos qu'il concerne. Important :
+  il reste indépendant de `retouchPhilosophyEnabled` (c'est une mention
+  légale, pas un contenu éditorial optionnel) — s'affiche donc juste
+  après le header même quand le texte "Avant de découvrir vos photos"
+  est désactivé pour un shooting.
+- **Alignement vertical** — le décalage `lg:ml-[10%]` du bloc éditorial
+  (essayé dans le premier jet pour une "légère asymétrie") est retiré :
+  Enzo le voulait aligné avec le titre du header, pas décalé. Les deux
+  blocs partagent déjà le même conteneur (`max-w-6xl px-4 sm:px-6`),
+  donc même bord gauche par défaut sans le décalage.
+- **Bouton retour au site** — nouveau, en haut de `gallery-view.tsx`,
+  réutilise directement `back-link.tsx` (déjà utilisé partout dans
+  l'admin) plutôt que d'inventer un nouveau composant.
+- **Couverture toujours verticale si possible** — la logique de
+  sélection de la couverture ("première photo") devient "première photo
+  VERTICALE, sinon la première tout court", calculée dans
+  `gallery-view.tsx` (`gallery-header.tsx` reste "bête", reçoit juste la
+  photo déjà choisie). Cohérent avec la mise en page : la colonne de
+  couverture est plus haute que large, une photo au format paysage y
+  aurait été recadrée bizarrement.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Toujours pas de vérification visuelle en direct dans un
+navigateur (même limite que le §6quatretquadragies) — à confirmer par
+Enzo sur le déploiement réel.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

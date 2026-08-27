@@ -2993,6 +2993,56 @@ voir §6unetquadragies et antérieurs). Composition vérifiée uniquement par
 lecture de code — premier vrai retour visuel à attendre d'Enzo sur le
 déploiement réel.
 
+## 6cinqetquadragies. Le vrai bug derrière "je ne trouve pas le bouton" (2026-08-27)
+
+Suite directe du §6tretquadragies. Enzo confirmait être sur la bonne page
+(`/admin/galleries/{id}`) et toujours ne rien voir. Vérification en
+direct impossible depuis cet environnement (tentative de simuler une
+session admin locale bloquée par le classificateur de sécurité — arrêtée
+immédiatement, aucune contournement tenté, données de test nettoyées) —
+**Enzo a envoyé une capture d'écran**, qui a montré la vraie cause en un
+coup d'œil : la galerie "Baptiste Port-Vendres" affichait "À retoucher"
+avec 11 photos sélectionnées, mais aussi "Import des finaux possible une
+fois la sélection confirmée" — un message qui ne devrait JAMAIS
+apparaître à ce statut. Aucun bandeau visible.
+
+**Cause réelle** : cette galerie a été déverrouillée avec l'ANCIENNE
+version de `unlockSelection()` (avant le correctif du §6unetquadragies,
+qui ne remettait à zéro QUE `selectionLockedAt`, jamais `status`) —
+résultat, un état incohérent figé en base : `status = TO_RETOUCH` mais
+`selectionLockedAt = null`. Le correctif du §6unetquadragies empêche ce
+nouvel état incohérent de se reproduire à l'avenir, mais ne répare rien
+pour cette galerie déjà cassée — et pire, le bandeau "revenir à la
+sélection" restait construit sur `selectionLockedAt !== null`, donc
+invisible précisément pour l'état cassé qu'il aurait dû permettre de
+réparer. Un correctif qui corrige la cause mais reste aveugle à ses
+propres dégâts déjà faits.
+
+**Vrai correctif** : arrêt de `selectionLockedAt` comme indicateur de
+phase partout dans cette page admin — remplacé par le `status` de la
+galerie, la même source de vérité déjà utilisée côté client
+(`/g/[slug]/page.tsx` ne regarde jamais `selectionLockedAt` non plus).
+Deux ensembles de statuts distincts plutôt qu'un seul booléen
+`selectionLocked` fourre-tout : `CONFIRMED_SELECTION_STATUSES` (large,
+inclut jusqu'à `DELIVERED`/`ARCHIVED` — décide "afficher l'espace de
+retouche ou pas") et `REVERTIBLE_TO_SELECTION_STATUSES` (plus étroit,
+`SELECTION_RECEIVED` à `IN_POST_PRODUCTION` — décide "afficher le bouton
+retour", volontairement exclu pour un shooting déjà livré, un cas plus
+lourd qui mériterait sa propre réflexion si jamais demandé). Robuste par
+construction : même si `selectionLockedAt` redevient incohérent pour une
+raison qu'on n'a pas encore vue, le bandeau reste piloté par le statut,
+la donnée que le reste de l'app traite déjà comme faisant foi.
+
+Pas de réparation manuelle de la galerie cassée en base — une fois ce
+correctif déployé, le bandeau redevient visible dessus et Enzo peut la
+réparer lui-même d'un clic, sans intervention directe sur ses données.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Diagnostic confirmé par capture d'écran d'Enzo (pas une
+supposition) ; correctif vérifié par lecture de code — la vraie
+confirmation reste le clic d'Enzo sur "Baptiste Port-Vendres" une fois
+déployé.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

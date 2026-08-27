@@ -25,6 +25,32 @@ import { PortfolioCoverPicker } from "./portfolio-cover-picker";
 import { PhotoThumbnail } from "./photo-thumbnail";
 import { BackLink } from "../../../back-link";
 
+// Statuts "post-sélection" — utilisés à la place de `selectionLockedAt`
+// pour décider quoi afficher (retour d'Enzo, 2026-08-27 : coincé sur "À
+// retoucher" avec le bouton "revenir à la sélection" introuvable). Cause
+// réelle trouvée : une galerie déverrouillée par l'ANCIENNE version de
+// `unlockSelection()` — avant le correctif qui repasse aussi le statut à
+// AWAITING_SELECTION — s'est retrouvée avec `selectionLockedAt = null`
+// mais `status = TO_RETOUCH` : un état incohérent que `selectionLockedAt`
+// seul ne peut plus détecter. Le statut, lui, reste toujours fiable —
+// c'est déjà la seule source de vérité côté client (`/g/[slug]/page.tsx`
+// ne regarde jamais `selectionLockedAt`).
+const CONFIRMED_SELECTION_STATUSES = new Set([
+  "SELECTION_RECEIVED",
+  "PAYMENT_PENDING",
+  "TO_RETOUCH",
+  "IN_POST_PRODUCTION",
+  "READY_TO_DELIVER",
+  "DELIVERED",
+  "ARCHIVED",
+]);
+const REVERTIBLE_TO_SELECTION_STATUSES = new Set([
+  "SELECTION_RECEIVED",
+  "PAYMENT_PENDING",
+  "TO_RETOUCH",
+  "IN_POST_PRODUCTION",
+]);
+
 const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
   dateStyle: "medium",
   timeStyle: "short",
@@ -95,7 +121,8 @@ export default async function GalleryDetailPage({
     },
     selectedPhotos.length,
   );
-  const selectionLocked = gallery.selectionLockedAt !== null;
+  const hasConfirmedSelection = CONFIRMED_SELECTION_STATUSES.has(gallery.status);
+  const canRevertToSelection = REVERTIBLE_TO_SELECTION_STATUSES.has(gallery.status);
 
   const selectedPhotoIds = new Set(selectedPhotos.map((photo) => photo.id));
   const previewUrlByPhotoId = new Map(photosWithUrl.map((photo) => [photo.id, photo.previewUrl]));
@@ -219,7 +246,7 @@ export default async function GalleryDetailPage({
           discret). Même traitement visuel que le bandeau "paiement en
           attente" juste au-dessus, pour être tout aussi impossible à
           rater. */}
-      {selectionLocked && (
+      {canRevertToSelection && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3">
           <p className="text-sm text-ink">
             Sélection verrouillée — le client ne peut plus la modifier.
@@ -255,7 +282,7 @@ export default async function GalleryDetailPage({
             </div>
 
             <div className="mt-6">
-              {selectionLocked ? (
+              {hasConfirmedSelection ? (
                 <RetouchWorkspace galleryId={gallery.id} photos={retouchPhotos} />
               ) : (
                 <p className="text-sm text-muted">

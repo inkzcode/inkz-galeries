@@ -41,18 +41,29 @@ const steps = [
 export function HomeIntro() {
   return (
     <>
-      {/* Taches de couleur animées en fond — présence de marque sans distraire */}
+      {/* Taches de couleur en dégradé, animées en fond (retour d'Enzo,
+          2026-08-27 : "j'aime les très légers dégradés [...] que tu
+          pourrais augmenter") — amplifiées par rapport à la première
+          version (taille, opacité, vrai dégradé rouge→or au lieu d'une
+          couleur plate) tout en gardant l'effet flou/atmosphérique, pas
+          un aplat dur. */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-accent-tint opacity-50 blur-3xl"
-        animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.1, 1] }}
+        className="pointer-events-none absolute -top-40 -right-40 h-[34rem] w-[34rem] rounded-full bg-gradient-to-br from-accent to-accent-soft opacity-60 blur-3xl"
+        animate={{ x: [0, 40, 0], y: [0, -30, 0], scale: [1, 1.15, 1] }}
         transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute top-1/3 -left-40 h-80 w-80 rounded-full bg-accent opacity-[0.08] blur-3xl"
-        animate={{ x: [0, 25, 0], y: [0, 30, 0] }}
+        className="pointer-events-none absolute top-1/4 -left-52 h-[28rem] w-[28rem] rounded-full bg-gradient-to-tr from-accent-soft to-accent opacity-40 blur-3xl"
+        animate={{ x: [0, 35, 0], y: [0, 40, 0] }}
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-accent-soft opacity-30 blur-3xl"
+        animate={{ x: [0, -25, 0], y: [0, 20, 0] }}
+        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut", delay: 2 }}
       />
 
       <section className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center px-6 py-24 sm:px-10">
@@ -146,7 +157,8 @@ export function HomeIntro() {
         </div>
       </section>
 
-      <section className="relative border-t border-border bg-surface px-6 py-20 sm:px-10">
+      <section className="relative bg-surface px-6 py-20 sm:px-10">
+        <div aria-hidden className="brand-band absolute top-0 h-[3px] w-full opacity-70" />
         <div className="mx-auto max-w-5xl">
           <motion.p
             className="text-sm tracking-wide text-muted uppercase"

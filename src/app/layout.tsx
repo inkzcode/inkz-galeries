@@ -48,6 +48,9 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <body className="antialiased">
+        {/* Bandeau de marque (retour d'Enzo, 2026-08-27) — présent sur
+            TOUTES les pages, pas seulement les pages de garde. */}
+        <div aria-hidden className="brand-band h-1 w-full" />
         <MotionProvider>{children}</MotionProvider>
       </body>
     </html>

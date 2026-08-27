@@ -22,7 +22,8 @@ export default async function Home() {
     <main className="relative overflow-hidden">
       <HomeIntro />
 
-      <section className="relative border-t border-border px-6 py-20 sm:px-10">
+      <section className="relative px-6 py-20 sm:px-10">
+        <div aria-hidden className="brand-band absolute top-0 h-[3px] w-full opacity-70" />
         <div className="mx-auto max-w-6xl">
           <p className="text-sm tracking-wide text-muted uppercase">Portfolio</p>
           <h2 className="mt-2 font-serif text-3xl font-bold text-ink sm:text-4xl">Séances passées</h2>

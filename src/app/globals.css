@@ -141,6 +141,33 @@ button {
   animation-delay: var(--delay, 0ms);
 }
 
+/* Bandeau de marque (retour d'Enzo, 2026-08-27 : "je veux des bandeaux
+   de couleurs [...] le rouge et le jaune crème ne sont pas assez
+   présents") — dégradé qui dérive lentement plutôt qu'un aplat figé,
+   posé une seule fois dans layout.tsx pour être présent sur TOUTES les
+   pages (pas seulement les pages de garde, contrairement à avant). Pure
+   CSS (pas de JS) : ce fichier ne dépend pas de motion/react. */
+@keyframes brand-band-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.brand-band {
+  background: linear-gradient(
+    90deg,
+    var(--color-brand-red),
+    var(--color-brand-gold),
+    var(--color-brand-red)
+  );
+  background-size: 200% 100%;
+  animation: brand-band-shift 10s var(--ease-standard) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   a,
   button,

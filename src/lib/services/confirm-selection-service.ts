@@ -84,23 +84,30 @@ export async function confirmSelection(
 }
 
 // Déverrouillage manuel depuis l'admin (brief §15 : "je dois pouvoir la
-// déverrouiller manuellement en cas de besoin"). Ne rétrograde PAS le
-// statut automatiquement — l'admin garde le contrôle de la suite.
+// déverrouiller manuellement en cas de besoin"). Repasse le statut à
+// AWAITING_SELECTION — indispensable, pas cosmétique : `/g/[slug]` route
+// uniquement sur `Gallery.status` (jamais sur `selectionLockedAt`), donc
+// sans ça le client restait bloqué sur l'écran d'attente même après
+// déverrouillage, aucun moyen de revenir à la grille de sélection (retour
+// d'Enzo, 2026-08-27 : "j'ai fait valider et j'peux pas revenir en
+// arrière" — bug réel trouvé en testant, pas juste un choix cosmétique à
+// l'origine). Les fichiers finaux déjà importés, s'il y en a, ne sont
+// jamais supprimés par cette action — seul le statut/verrou changent.
 export async function unlockSelection(galleryId: string): Promise<void> {
   const gallery = await prisma.gallery.findUniqueOrThrow({ where: { id: galleryId } });
 
   await prisma.$transaction([
     prisma.gallery.update({
       where: { id: galleryId },
-      data: { selectionLockedAt: null },
+      data: { selectionLockedAt: null, status: "AWAITING_SELECTION" },
     }),
     prisma.statusHistory.create({
       data: {
         galleryId,
         fromStatus: gallery.status,
-        toStatus: gallery.status,
+        toStatus: "AWAITING_SELECTION",
         changedBy: "ADMIN",
-        note: "Sélection déverrouillée manuellement",
+        note: "Sélection déverrouillée manuellement — retour à la sélection",
       },
     }),
   ]);

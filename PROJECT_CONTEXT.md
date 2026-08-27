@@ -2809,6 +2809,57 @@ complet tous propres. **Le déclenchement réel reste à valider par Enzo**
 — la détection elle-même n'a pas pu être testée contre une vraie réponse
 B2 de quota dépassé dans cet environnement.
 
+## 6unetquadragies. Vrai bug de déverrouillage + bandeaux de marque (2026-08-27)
+
+**Bug réel trouvé par Enzo en testant** : "j'ai fait un test de sélection
+de photo avant d'envoyer à mon client et j'ai fait valider et j'peux pas
+revenir en arrière". `unlockSelection()` (§15 du brief, "je dois pouvoir
+la déverrouiller manuellement") ne remettait à zéro QUE
+`selectionLockedAt` — jamais `Gallery.status`. Or `/g/[slug]/page.tsx`
+route uniquement sur `status` (jamais sur `selectionLockedAt`) pour
+décider quelle vue afficher : `SELECTION_RECEIVED`/`PAYMENT_PENDING`/
+`TO_RETOUCH` affichent toutes `WaitingView` ("Merci, j'ai bien reçu ta
+sélection"), peu importe l'état du verrou. Le bouton "déverrouiller"
+avait donc l'air de marcher côté admin (aucune erreur, la BDD changeait
+bien) mais ne débloquait rien de visible côté client — un déverrouillage
+qui ne déverrouille rien à l'écran. Corrigé : `unlockSelection()`
+repasse maintenant `status` à `AWAITING_SELECTION` en plus du verrou ;
+bouton renommé "· revenir à la sélection" (moins ambigu que
+"déverrouiller" vu ce qu'il fait réellement). Les fichiers finaux déjà
+importés, s'il y en a, ne sont jamais supprimés par cette action.
+
+**Bandeaux de marque renforcés** (retour d'Enzo : "je trouve que
+'Rouge/or renforcés' n'est pas assez fort [...] je veux des bandeaux de
+couleurs [...] j'aime les très légers dégradés (que tu pourrais
+augmenter) sur la page d'accueil") — deux volets :
+- Nouvelle classe utilitaire `.brand-band` (`globals.css`, CSS pur, pas
+  de JS) — dégradé rouge→or→rouge qui dérive lentement
+  (`background-position` animé). Posée une fois dans `layout.tsx`, tout
+  en haut du `<body>` : un bandeau de marque présent sur TOUTES les
+  pages du site, pas seulement les pages de garde — corrige directement
+  la plainte initiale de la session précédente ("il y en a que sur les
+  pages de garde"). Reprise comme diviseur de section (au lieu d'un
+  simple `border-t border-border` gris) entre le hero et "Comment ça
+  marche", et entre "Comment ça marche" et "Portfolio" sur la home.
+- Les trois taches de couleur animées du hero (`home-intro.tsx`) —
+  amplifiées significativement : taille (24rem/20rem → 34rem/28rem, plus
+  une troisième tache ajoutée), opacité (0,5/0,08 → 0,6/0,4/0,3), et
+  surtout vrai dégradé deux couleurs (`bg-gradient-to-br from-accent
+  to-accent-soft`) au lieu d'un aplat d'une seule couleur — c'est le
+  "dégradé" qu'Enzo appréciait déjà, juste rendu plus présent, sans
+  perdre l'effet flou/atmosphérique qu'il aimait dans la version
+  d'origine.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Bandeau vérifié en direct dans le navigateur (dégradé
+rouge→or→rouge confirmé via `getComputedStyle`, animation
+`brand-band-shift` active). Correctif de déverrouillage vérifié par
+lecture de code uniquement (le routage `/g/[slug]` par statut est
+directement lisible dans page.tsx) — **pas testé de bout en bout** avec
+une vraie sélection verrouillée puis déverrouillée dans un navigateur,
+faute de galerie de test avec sélection réelle dans cet environnement. À
+confirmer par Enzo.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

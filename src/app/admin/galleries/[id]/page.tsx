@@ -234,7 +234,7 @@ export default async function GalleryDetailPage({
                 {selectionLocked && (
                   <form action={unlockSelectionAction.bind(null, gallery.id)}>
                     <button type="submit" className="underline decoration-border hover:text-ink">
-                      · déverrouiller
+                      · revenir à la sélection
                     </button>
                   </form>
                 )}

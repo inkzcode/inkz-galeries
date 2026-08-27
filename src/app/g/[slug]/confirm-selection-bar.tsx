@@ -48,6 +48,10 @@ export function ConfirmSelectionBar({
   return (
     <>
       <div className="fixed inset-x-0 bottom-0 bg-paper/95 shadow-[0_-8px_24px_-18px_rgba(20,20,20,0.25)] backdrop-blur-sm">
+        {/* Même bandeau de marque qu'en tête de page (globals.css,
+            `.brand-band`) — retour d'Enzo, 2026-08-27 : "la palette doit
+            être plus présente [...] reconnaître visuellement Inkz". */}
+        <div className="brand-band h-[3px] w-full" aria-hidden />
         <div className="relative mx-auto max-w-5xl px-4 py-4 text-sm sm:px-6">
           <SendBurst triggerKey={sendTriggerKey} />
           {locked ? (
@@ -97,7 +101,8 @@ export function ConfirmSelectionBar({
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
               transition={{ duration: 0.25, ease: [0.2, 0.7, 0.3, 1] }}
             >
-              <h2 className="font-serif text-xl font-semibold text-ink">Récapitulatif</h2>
+              <span aria-hidden className="block h-px w-10 bg-accent-soft" />
+              <h2 className="mt-3 font-serif text-xl font-semibold text-ink">Récapitulatif</h2>
               <p className="mt-2 text-sm text-ink-soft">{summary.label}</p>
               {summary.pricing.requiresPayment && (
                 <p className="mt-1 text-sm text-ink-soft">

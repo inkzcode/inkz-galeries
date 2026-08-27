@@ -104,6 +104,15 @@ export function GalleryView({
   const nextColor = openPhoto
     ? colorForNoteIndex(openPhoto.notes.length + drafts.length)
     : colorForNoteIndex(0);
+  // Petit signal visuel quand on clique "Annoter cette photo" dans le
+  // panneau (retour d'Enzo, mockup du 2026-08-27 : conserver ce bouton du
+  // mockup) — le tracé libre est déjà actif en permanence sur la photo
+  // (voir drawing-overlay.tsx), ce bouton ne change donc rien au
+  // fonctionnement (point 12 : "ne casse rien"), il rend juste visible où
+  // dessiner via un bref halo coloré sur la photo. `key`-based replay,
+  // même idée que send-burst.tsx.
+  const [hintKey, setHintKey] = useState(0);
+
   // Change avec la navigation (flèches ou clic sur une image), pas avec
   // le temps (retour d'Enzo, 2026-08-25 : "je veux qu'elle change à
   // chaque fois qu'on appuie sur les flèches [...] mais aussi à chaque
@@ -192,13 +201,20 @@ export function GalleryView({
 
       {/* Transition calme avant la grille (retour d'Enzo, 2026-08-27) —
           juste le compte, rien de plus ; les photos deviennent le produit
-          principal à partir d'ici. */}
+          principal à partir d'ici. Repris en petite pastille or (retour
+          d'Enzo, 2026-08-27 : "la palette doit être plus présente [...]
+          jaune crème pour les petits fonds éditoriaux") — la partie
+          "sélectionnée(s)" en rouge, seul vrai signal de couleur de cette
+          ligne, pour rester lisible comme une info, pas une décoration. */}
       <div className="mx-auto max-w-6xl px-4 pt-6 pb-6 sm:px-6">
-        <p className="text-sm text-muted tabular-nums">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-tint px-3 py-1 text-sm text-ink-soft tabular-nums">
           {photos.length} photographie{photos.length > 1 ? "s" : ""}
-          {selectedCount > 0 &&
-            ` · ${selectedCount} sélectionnée${selectedCount > 1 ? "s" : ""}`}
-        </p>
+          {selectedCount > 0 && (
+            <span className="font-medium text-accent">
+              · {selectedCount} sélectionnée{selectedCount > 1 ? "s" : ""}
+            </span>
+          )}
+        </span>
       </div>
 
       <motion.div
@@ -211,7 +227,11 @@ export function GalleryView({
           <motion.div
             key={photo.id}
             variants={tile}
-            className="group relative mb-6 break-inside-avoid overflow-hidden rounded-md"
+            className={`group relative mb-6 break-inside-avoid overflow-hidden rounded-md transition-shadow ${
+              photo.selected
+                ? "ring-2 ring-accent ring-offset-2 ring-offset-paper"
+                : "hover:ring-1 hover:ring-accent-soft"
+            }`}
           >
             {photo.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- URLs de preview signées/locales, voir storage/README.md
@@ -247,7 +267,6 @@ export function GalleryView({
                 selected={photo.selected}
                 locked={locked}
                 onToggle={() => handleToggle(photo.id)}
-                variant="chip"
               />
             </span>
           </motion.div>
@@ -266,6 +285,7 @@ export function GalleryView({
               draftNotes={drafts}
               activeColor={nextColor}
               onStrokeComplete={handleStrokeComplete}
+              hintKey={hintKey}
             />
           )
         }
@@ -286,6 +306,7 @@ export function GalleryView({
               selected={openPhoto.selected}
               locked={locked}
               onToggleSelected={() => handleToggle(openPhoto.id)}
+              onAnnotateHint={() => setHintKey((key) => key + 1)}
             />
           )
         }

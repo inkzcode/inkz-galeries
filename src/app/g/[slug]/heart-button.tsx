@@ -23,14 +23,10 @@ export function HeartButton({
   selected,
   locked,
   onToggle,
-  variant = "chip",
 }: {
   selected: boolean;
   locked: boolean;
   onToggle: () => void;
-  /** "chip" = pastille claire posée sur une photo (grille) ; "panel" =
-   * fond sombre du panneau de remarques (lightbox). */
-  variant?: "chip" | "panel";
 }) {
   const [burst, setBurst] = useState(false);
 
@@ -73,17 +69,11 @@ export function HeartButton({
         transition={{ duration: 0.5, ease: "easeOut" }}
         aria-label={selected ? "Retirer de la sélection" : "Ajouter à la sélection"}
         aria-pressed={selected}
-        className={
-          variant === "chip"
-            ? `flex h-9 w-9 items-center justify-center rounded-full text-lg shadow-sm transition-colors ${
-                selected
-                  ? "bg-accent text-paper"
-                  : "bg-paper/80 text-ink backdrop-blur-sm hover:bg-paper"
-              }`
-            : `flex h-9 w-9 items-center justify-center rounded-full text-lg transition-colors ${
-                selected ? "bg-accent text-paper" : "bg-paper/10 text-paper hover:bg-paper/20"
-              }`
-        }
+        className={`flex h-9 w-9 items-center justify-center rounded-full text-lg shadow-sm transition-colors ${
+          selected
+            ? "bg-accent text-paper"
+            : "border border-border bg-paper/80 text-ink backdrop-blur-sm hover:bg-paper"
+        }`}
       >
         {selected ? "♥" : "♡"}
       </motion.button>

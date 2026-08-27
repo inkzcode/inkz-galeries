@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import type { DrawingPoint, PublicGalleryNote } from "@/lib/services/public-gallery-service";
 
 const VIEWBOX = 1000;
@@ -40,6 +41,7 @@ export function DrawingOverlay({
   activeColor,
   disabled = false,
   onStrokeComplete,
+  hintKey = 0,
 }: {
   notes: PublicGalleryNote[];
   /** Tracés déjà terminés (relâchés) mais pas encore envoyés — restent
@@ -51,6 +53,12 @@ export function DrawingOverlay({
   activeColor: string;
   disabled?: boolean;
   onStrokeComplete: (points: DrawingPoint[]) => void;
+  /** Incrémenté par le bouton "Annoter cette photo" du panneau
+   * (photo-notes-panel.tsx) — le tracé libre est déjà actif en
+   * permanence, ce compteur ne fait que rejouer un bref halo coloré
+   * autour de la photo pour indiquer où dessiner (retour d'Enzo, mockup
+   * du 2026-08-27). Même idée de replay que send-burst.tsx. */
+  hintKey?: number;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [currentPoints, setCurrentPoints] = useState<DrawingPoint[]>([]);
@@ -99,7 +107,21 @@ export function DrawingOverlay({
   }
 
   return (
-    <svg
+    <>
+      <AnimatePresence>
+        {hintKey > 0 && (
+          <motion.div
+            key={hintKey}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-md ring-4 ring-accent"
+            initial={{ opacity: 0.9 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.1, ease: "easeOut" }}
+          />
+        )}
+      </AnimatePresence>
+      <svg
       ref={svgRef}
       viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
       preserveAspectRatio="none"
@@ -159,6 +181,7 @@ export function DrawingOverlay({
           strokeLinejoin="round"
         />
       )}
-    </svg>
+      </svg>
+    </>
   );
 }

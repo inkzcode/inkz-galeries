@@ -34,7 +34,8 @@ export function GalleryHeader({
     >
       <div className="grid items-center gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
         <div className="order-2 lg:order-1">
-          <p className="text-sm tracking-wide text-muted uppercase">
+          <p className="flex items-center gap-2 text-sm tracking-wide text-muted uppercase">
+            <span aria-hidden className="h-px w-6 bg-accent" />
             {gallery.shootingDate ? dateFormatter.format(gallery.shootingDate) : "Votre galerie privée"}
           </p>
           <h1 className="mt-3 font-serif text-5xl leading-[1.05] font-bold text-ink sm:text-6xl lg:text-7xl">

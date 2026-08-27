@@ -3182,6 +3182,96 @@ Le déclenchement réel du `onError` en conditions de quota B2 dépassé
 reste non testable dans cet environnement (pas de vraies clés B2 capées)
 — même limite déjà signalée en §6septetquadragies.
 
+## 6neufetquadragies. Palette plus présente sur la galerie + refonte complète de la visionneuse (2026-08-27)
+
+Brief structuré en 14 points d'Enzo, deux volets distincts.
+
+**Volet 1 — couleur sur la galerie principale.** Retour explicite : "elle
+reste encore un peu trop blanche/neutre [...] ne transforme surtout pas
+la page en patchwork de couleurs". Six touches ciblées, toutes en
+réutilisant des motifs déjà établis (la fine règle or de
+`raw-disclaimer.tsx`, le `.brand-band` déjà posé en haut de chaque page)
+plutôt qu'en inventant de nouveaux usages de couleur :
+
+- `gallery-header.tsx` — petite règle rouge avant le kicker (date/"Votre
+  galerie privée"), écho de la règle or de `raw-disclaimer.tsx` juste
+  en dessous.
+- `gallery-view.tsx` — compteur de photos transformé en pastille
+  `bg-accent-tint` (or tamisé), avec "X sélectionnée(s)" en rouge —
+  seul vrai signal de couleur de cette ligne.
+- `gallery-view.tsx` — tuiles sélectionnées : `ring-2 ring-accent` ;
+  tuiles non sélectionnées : léger `ring-accent-soft` au survol.
+- `confirm-selection-bar.tsx` — le `.brand-band` (dégradé rouge/or déjà
+  utilisé en haut de chaque page) réutilisé en fine bordure au sommet
+  de la barre fixe de confirmation.
+- `confirm-selection-bar.tsx` — même fine règle or que `raw-disclaimer.tsx`
+  au-dessus du titre "Récapitulatif" de la modale.
+
+Le blanc/crème reste majoritaire — aucun nouveau token de couleur créé,
+aucune modification des pages admin (hors périmètre de la demande).
+
+**Volet 2 — refonte de la visionneuse (`lightbox.tsx`).** Mockup fourni
+par Enzo, contrainte explicite : "je ne veux plus voir les photos de la
+galerie derrière la visionneuse [...] pas de fond semi-transparent". Le
+site n'ayant pas de vrai mode sombre (`globals.css` ne définit qu'un seul
+thème), une seule palette claire suffit — pas de variante `dark:`.
+
+- Fond `bg-ink/95` remplacé par `bg-surface` (zone photo) + `bg-paper`
+  (panneau latéral, `border-l border-border` pour la séparation) — plus
+  aucune transparence.
+- Nouvelle structure : barre du haut (compteur + fermer) TOUJOURS hors de
+  la zone photo, pour ne jamais recouvrir l'image ; flèches précédent/
+  suivant repositionnées près des bords de la photo (pas des bords de
+  l'écran) ; **"Voir toutes les photos"** (nouveau bouton, absent avant)
+  posé SOUS la photo dans le flux normal — jamais en superposition, quel
+  que soit le ratio de la photo affichée.
+- `photo-notes-panel.tsx` entièrement repassé en thème clair (`text-paper`
+  → `text-ink`, `bg-paper/10` → `bg-surface`/`bg-paper`, etc.), et
+  restructuré en deux blocs visuellement distincts sans être deux cards
+  identiques (point 9 du brief) : le bloc éditorial "À garder en tête"
+  reste discret (étiquette rouge + règle fine, pas de fond, italique) ;
+  le bloc fonctionnel "Un détail vous gêne ?" porte l'action (titre en
+  plus grand, nouveau bouton **"Annoter cette photo"** en rouge Inkz).
+- Le tracé libre était déjà actif en permanence sur la photo (aucune
+  étape "activer le mode annotation" n'existait) — pour ne rien casser
+  (point 12 du brief), le bouton "Annoter cette photo" ne change donc
+  rien au fonctionnement ; il déclenche juste un bref halo rouge autour
+  de la photo (`drawing-overlay.tsx`, nouveau prop `hintKey`, même
+  principe de replay que `send-burst.tsx`) pour indiquer où dessiner.
+- Pas de fausse citation ajoutée au bloc éditorial (le mockup d'Enzo en
+  montrait une, à titre d'exemple) : `trust-message-service.ts` ne
+  stocke qu'un texte simple, sans source — en inventer une aurait été un
+  mensonge visuel envers le client.
+- `heart-button.tsx` simplifié : l'ancien variant `"panel"` (pensé pour
+  un fond sombre) n'a plus de raison d'être maintenant que la
+  visionneuse est claire partout — un seul style désormais, utilisé à
+  la fois dans la grille et dans le panneau.
+- `delivery-view.tsx` (livraison finale, même `Lightbox` sans
+  `sidePanel`) non cassé par la refonte — vérifié à la lecture, son
+  bouton "Télécharger cette photo" (`children`) se retrouve simplement
+  sous la photo, au même endroit que "Voir toutes les photos".
+
+**Bug d'environnement découvert et corrigé en cours de route** (rien à
+voir avec ce brief) : après le build de production de la section
+précédente, le serveur `next dev` relancé chargeait un dossier `.next`
+de PRODUCTION laissé par ce build — cause des erreurs fantômes
+(`Cannot read properties of undefined (reading 'findMany')`, avertissement
+de poids de police "300 800" alors que le code utilise bien `"variable"`)
+qui n'avaient RIEN à voir avec ce brief. `rm -rf .next` puis redémarrage
+propre du serveur de dev a confirmé que ces erreurs étaient bien un
+artefact d'environnement, pas un vrai bug de code (build de production
+propre + `tsc`/`eslint`/86 tests tous verts avant ce nettoyage).
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Serveur de dev relancé proprement, page `/g` confirmée sans
+erreur console sur un onglet neuf. Interaction réelle avec la
+visionneuse (ouverture d'une vraie photo, halo d'annotation, défilement
+du panneau) **non vérifiée en direct** — ni identifiants admin ni code
+d'accès galerie réel disponibles dans cet environnement (même limite que
+tout au long de cette session), et la capture d'écran du navigateur
+n'était pas disponible non plus à ce moment précis. À confirmer par
+Enzo en conditions réelles.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

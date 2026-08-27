@@ -29,6 +29,15 @@ import { SendBurst } from "./send-burst";
 //    elle, s'affiche désormais avant la galerie (voir raw-disclaimer.tsx,
 //    2026-08-25) : "au moment d'annoter" (ici) est un moment différent
 //    de "avant de découvrir les photos" (là-bas).
+//
+// Refonte du 2026-08-27 (retour d'Enzo, mockup à l'appui) : panneau clair
+// (la visionneuse n'a plus de fond sombre, voir lightbox.tsx), et les deux
+// blocs "image de soi" / "retouche" désormais visuellement distincts sans
+// être deux cards identiques — le premier reste discret (petite étiquette
+// rouge + texte éditorial, pas de fond), le second porte l'action (titre
+// en plus grand, bouton). Pas de fausse citation/source ajoutée : les
+// messages viennent de `trust-message-service.ts`, qui ne stocke qu'un
+// texte simple — inventer une source serait mentir au client.
 export function PhotoNotesPanel({
   gallerySlug,
   photoId,
@@ -41,6 +50,7 @@ export function PhotoNotesPanel({
   selected,
   locked,
   onToggleSelected,
+  onAnnotateHint,
 }: {
   gallerySlug: string;
   photoId: string;
@@ -58,6 +68,11 @@ export function PhotoNotesPanel({
   selected: boolean;
   locked: boolean;
   onToggleSelected: () => void;
+  /** Bouton "Annoter cette photo" du mockup (retour d'Enzo, 2026-08-27) —
+   * le tracé libre est déjà actif en permanence sur la photo (voir
+   * drawing-overlay.tsx) ; ce bouton ne fait qu'attirer l'œil vers elle
+   * via un bref halo coloré, sans changer la logique existante. */
+  onAnnotateHint?: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
@@ -133,33 +148,64 @@ export function PhotoNotesPanel({
   const isEmpty = notes.length === 0 && drafts.length === 0;
 
   return (
-    <div className="flex h-full flex-col text-paper">
-      <div className="shrink-0 border-b border-paper/10 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-medium text-paper">Cette photo</span>
-          <HeartButton selected={selected} locked={locked} onToggle={onToggleSelected} variant="panel" />
-        </div>
-        {hasTips && (
-          <p className="mt-3 text-xs leading-relaxed text-paper/70">{tips!.selfImageMessage}</p>
-        )}
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border p-4">
+        <span className="text-sm font-medium text-ink">Cette photo</span>
+        <HeartButton selected={selected} locked={locked} onToggle={onToggleSelected} />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="mb-3 text-xs leading-relaxed text-paper/60">
-          <p className="font-medium text-paper/80">Un détail vous gêne ?</p>
-          <p className="mt-1">
-            Entourez-le directement sur la photo et laissez-moi une petite note : une
-            mèche, un bouton, un pli, une imperfection, un élément du décor…
+      {/* Bloc éditorial — discret, pas de fond, juste une étiquette et une
+          fine règle rouge (point 7 : "petite respiration éditoriale",
+          point 9 : distinct du bloc retouche par la typo/l'espace, pas
+          par une card de couleur). */}
+      {hasTips && (
+        <div className="shrink-0 border-b border-border px-4 py-4">
+          <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-accent uppercase">
+            <span aria-hidden className="h-px w-4 bg-accent" />À garder en tête
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft italic">
+            {tips!.selfImageMessage}
           </p>
-          <p className="mt-1">
+        </div>
+      )}
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {/* Bloc fonctionnel — porte l'action, contraste avec le bloc
+            éditorial par un vrai titre et un bouton plein (point 8/9). */}
+        <div className="mb-4">
+          <p className="text-xs font-medium tracking-wide text-muted uppercase">
+            Un détail vous gêne ?
+          </p>
+          <p className="mt-1.5 font-serif text-lg font-semibold text-ink">
+            Entourez la zone et laissez-moi une note.
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
             Je peux corriger ou atténuer ces petits détails pendant la retouche. En
             revanche, je ne modifierai jamais votre morphologie ou les traits qui font
             de vous vous.
           </p>
+          <motion.button
+            type="button"
+            onClick={onAnnotateHint}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            className="mt-3 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M4 20l4-1 11-11-3-3L5 16l-1 4z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Annoter cette photo
+          </motion.button>
         </div>
 
         {isEmpty && (
-          <p className="text-xs text-paper/40">Aucune remarque sur cette photo pour l&apos;instant.</p>
+          <p className="text-xs text-faint">Aucune remarque sur cette photo pour l&apos;instant.</p>
         )}
 
         <div className="flex flex-col gap-3">
@@ -170,7 +216,7 @@ export function PhotoNotesPanel({
             return (
               <div
                 key={note.id}
-                className={`rounded-md border border-paper/15 bg-paper/5 p-2.5 ${isDeleting ? "opacity-40" : ""}`}
+                className={`rounded-md border border-border bg-surface p-2.5 ${isDeleting ? "opacity-40" : ""}`}
               >
                 <div className="mb-1.5 flex items-center gap-2">
                   <span
@@ -178,7 +224,7 @@ export function PhotoNotesPanel({
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: note.color ?? "#e63946" }}
                   />
-                  <span className="text-[11px] text-paper/50">
+                  <span className="text-[11px] text-muted">
                     {dirty && !isDeleting ? "Modifié, pas encore enregistré" : "Envoyée"}
                   </span>
                   <button
@@ -186,7 +232,7 @@ export function PhotoNotesPanel({
                     onClick={() => handleDeleteSaved(note.id)}
                     disabled={isDeleting}
                     aria-label="Supprimer cette remarque"
-                    className="ml-auto text-xs text-paper/40 hover:text-paper/80"
+                    className="ml-auto text-xs text-muted hover:text-danger"
                   >
                     Supprimer
                   </button>
@@ -198,7 +244,7 @@ export function PhotoNotesPanel({
                     setEditedMessages((prev) => ({ ...prev, [note.id]: event.target.value }))
                   }
                   rows={2}
-                  className="w-full resize-none rounded-md border border-paper/20 bg-paper/10 px-2.5 py-1.5 text-sm text-paper outline-none focus:border-paper/50"
+                  className="w-full resize-none rounded-md border border-border bg-paper px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent"
                 />
                 {touched && dirty && !value.trim() && (
                   <p className="mt-1 text-[11px] text-danger">
@@ -210,19 +256,19 @@ export function PhotoNotesPanel({
           })}
 
           {drafts.map((draft) => (
-            <div key={draft.id} className="rounded-md border border-paper/25 bg-paper/10 p-2.5">
+            <div key={draft.id} className="rounded-md border border-accent-soft bg-accent-tint/40 p-2.5">
               <div className="mb-1.5 flex items-center gap-2">
                 <span
                   aria-hidden
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: draft.color }}
                 />
-                <span className="text-[11px] text-paper/50">Pas encore envoyée</span>
+                <span className="text-[11px] text-muted">Pas encore envoyée</span>
                 <button
                   type="button"
                   onClick={() => onDraftDiscard(draft.id)}
                   aria-label="Annuler ce tracé"
-                  className="ml-auto text-xs text-paper/40 hover:text-paper/80"
+                  className="ml-auto text-xs text-muted hover:text-danger"
                 >
                   Annuler
                 </button>
@@ -233,7 +279,7 @@ export function PhotoNotesPanel({
                 rows={2}
                 autoFocus
                 placeholder="Ex. retirer le bouton sur la joue"
-                className="w-full resize-none rounded-md border border-paper/30 bg-paper/10 px-2.5 py-1.5 text-sm text-paper placeholder:text-paper/40 outline-none focus:border-paper/60"
+                className="w-full resize-none rounded-md border border-border bg-paper px-2.5 py-1.5 text-sm text-ink placeholder:text-faint outline-none focus:border-accent"
               />
               {touched && !draft.message.trim() && (
                 <p className="mt-1 text-[11px] text-danger">Ajoutez un message avant d&apos;envoyer.</p>
@@ -243,7 +289,7 @@ export function PhotoNotesPanel({
         </div>
       </div>
 
-      <div className="relative shrink-0 border-t border-paper/10 p-4">
+      <div className="relative shrink-0 border-t border-border p-4">
         {error && <p className="mb-2 text-xs text-danger">{error}</p>}
         <motion.button
           type="button"
@@ -251,7 +297,7 @@ export function PhotoNotesPanel({
           disabled={pending || !hasChanges}
           whileHover={pending || !hasChanges ? undefined : { scale: 1.02 }}
           whileTap={pending || !hasChanges ? undefined : { scale: 0.97 }}
-          className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-paper/15 disabled:opacity-40"
+          className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-border disabled:text-muted disabled:opacity-100"
         >
           {pending ? "Enregistrement…" : "Enregistrer mes remarques"}
         </motion.button>

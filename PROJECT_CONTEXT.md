@@ -3433,6 +3433,37 @@ le résultat visuel final (la fluidité de l'animation elle-même) reste à
 confirmer par Enzo en conditions réelles — hors de portée de vérification
 dans cet environnement pour les raisons expliquées ci-dessus.
 
+## 6cinquante-deuxièmes. Resend activé — les 3 emails automatiques sont vivants (2026-08-28)
+
+Enzo a créé son compte Resend et généré une clé API, collée directement
+dans le chat — ajoutée à `RESEND_API_KEY` dans `.env.local` (jamais
+committé, fichier gitignoré, vérifié via `git check-ignore`). Décision
+prise avec lui, voir §7 : "lien direct privé sans PIN" retiré du
+backlog (Chantier Inkz mis à jour) — Enzo ne le veut plus.
+
+Vérifié par un envoi RÉEL (pas juste une lecture de code) : script
+jetable (`test-resend-temp.ts`, à la racine, supprimé aussitôt après —
+absent de `git status`) important directement le SDK `resend` (pas
+`src/lib/email/shared.ts`, qui importe `server-only` — throw
+inconditionnel hors du bundler Next.js, confirmé en le testant en
+premier). Premier essai vers une adresse quelconque : rejeté (403,
+sandbox Resend limitée à l'adresse du compte tant qu'aucun domaine n'est
+vérifié — mais confirme que la clé elle-même est valide, une clé
+invalide aurait renvoyé 401). Deuxième essai vers l'adresse du compte
+Resend d'Enzo : accepté, email réellement délivré (id de message
+renvoyé par l'API).
+
+**Limite connue, à traiter plus tard si besoin** : tant qu'aucun domaine
+n'est vérifié sur resend.com/domains, Resend n'autorise l'envoi qu'à
+l'adresse du compte Resend lui-même (`onboarding@resend.dev` comme
+expéditeur, sandbox). Les 3 emails vers de vrais clients (galerie
+disponible, paiement reçu) échoueront donc silencieusement (voir le
+dégradé sans erreur de `shared.ts`) tant qu'un vrai domaine n'est pas
+vérifié — seul l'email "sélection reçue" (vers Enzo lui-même) marchera
+sans ça. Pas encore signalé comme bloquant : à vérifier avec Enzo s'il a
+un domaine (ex. inkz.fr) à connecter, ou si `onboarding@resend.dev`
+suffit pour l'instant vu le volume attendu.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —
@@ -3447,7 +3478,6 @@ ne pas trancher seul :
 - **Prestataire de paiement définitif** (Stripe supposé, à confirmer) et
   modalités exactes (paiement unique vs Payment Intent, devise unique EUR
   pour l'instant ?).
-- **Service d'email transactionnel** (Resend suggéré, non validé).
 - **Infrastructure IA existante** du photographe (pour la génération de
   textes d'introduction) — ne rien connecter avant d'avoir compris comment
   elle fonctionne déjà dans son autre projet.

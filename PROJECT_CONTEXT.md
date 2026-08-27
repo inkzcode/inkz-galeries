@@ -3272,6 +3272,76 @@ tout au long de cette session), et la capture d'écran du navigateur
 n'était pas disponible non plus à ce moment précis. À confirmer par
 Enzo en conditions réelles.
 
+## 6cinquantièmes. Visionneuse reprise à l'identique du mockup d'Enzo, pas juste "inspirée" (2026-08-27)
+
+Retour direct après §6neufetquadragies, mockup RE-collé (le même) avec
+deux reproches précis : "on a perdu toute les animations" et "c'est moi
+qui ai créé cette photo pour que tu fasses la même chose, pas pour que
+tu t'inspires". Deux leçons pour la suite : (1) quand Enzo colle une
+image de référence, la traiter comme une SPEC à reproduire fidèlement,
+pas comme une ambiance à réinterpréter ; (2) toute refonte de composant
+interactif doit repartir de l'inventaire des micro-animations existantes
+et vérifier qu'aucune n'a disparu en route, pas seulement que le
+résultat "a l'air bien".
+
+- **Fichiers de référence retrouvés directement** dans les téléchargements
+  d'Enzo (`ChatGPT Image 27 août 2026, 23_48_29.png`, le plus récent) —
+  lu en haute résolution plutôt que de retravailler depuis l'aperçu basse
+  résolution collé dans le chat.
+- **`lightbox.tsx` restructuré en deux "cartes"** posées sur un fond
+  crème (`bg-surface`), au lieu d'un fond plein bord-à-bord : carte photo
+  (coins arrondis 16px, ombre légère) + carte panneau (même arrondi,
+  bordure, ombre) — reproduit la mise en page du mockup au lieu du
+  premier jet (bandeau plein écran avec panneau à bord perdu). Barre
+  compteur/fermer toujours au-dessus des deux cartes. Flèches sorties
+  légèrement de la carte photo (`lg:-left-5`/`lg:-right-5`) plutôt que
+  collées aux bords de l'écran.
+- **Animation restaurée sur CHAQUE contrôle** (fermer, flèches, "Annoter
+  cette photo", "Ajouter à mes favoris", "Voir toutes les photos",
+  "Enregistrer mes remarques") via `whileHover`/`whileTap` — absente du
+  premier jet sur les flèches/fermer/voir-toutes (plates, juste
+  `transition-colors` CSS), cause probable du "on a perdu toute les
+  animations".
+- **`photo-notes-panel.tsx`** : grand guillemet décoratif rouge au-dessus
+  de la citation "À garder en tête" (élément purement typographique,
+  sûr à ajouter) ; bouton "Annoter cette photo" recoloré en crème/or
+  (`bg-accent-tint`/`text-accent`, pas rouge plein comme le premier jet) ;
+  petite règle rouge sous "Entourez la zone / et laissez-moi une note." ;
+  la pastille cœur en tête de panneau (absente du mockup) retirée au
+  profit d'un grand bouton "Ajouter à mes favoris" pleine largeur en bas
+  du panneau, rouge plein, icône cœur SVG.
+- **`heart-button.tsx`** — nouveau prop `label` optionnel : rend un grand
+  bouton pleine largeur (icône + texte) au lieu de la pastille circulaire,
+  en réutilisant la même logique de confettis/vibration déjà en place
+  (pas de duplication de cette logique).
+- **Ce qui n'a délibérément PAS été copié** : la fausse citation "Mita,
+  Dermer & Knight · 1977" et le lien "En savoir plus sur cette étude" du
+  mockup — `trust-message-service.ts` ne stocke qu'un texte simple, sans
+  auteur ni source ; en inventer une aurait affiché une fausse autorité
+  scientifique à de vrais clients. Signalé explicitement à Enzo plutôt
+  que reproduit silencieusement à l'identique.
+
+**Méthode de vérification** — sans identifiants admin ni vraie galerie
+dans cet environnement, et la capture d'écran du navigateur indisponible
+à ce moment : une page temporaire (`src/app/dev-lightbox-preview/`,
+JAMAIS commitée) a été créée pour monter `GalleryView` avec des données
+factices (les deux images de repli de §6huitetquadragies en guise de
+photos), afin de pouvoir cliquer une vraie photo et lire la structure/le
+texte réellement rendus (`get_page_text`) et les couleurs réellement
+calculées (`getComputedStyle` via le navigateur) plutôt que de se fier
+seulement à la lecture du code. Confirmé : fond de la visionneuse
+`rgb(246,246,245)` (`--color-surface`), bouton "Annoter cette photo" en
+`--color-accent-tint`/`--color-accent`, bouton "Ajouter à mes favoris"
+en `--color-accent` plein, carte panneau arrondie à 16px bordée
+`--color-border` — conforme aux couleurs prévues. Page de test supprimée
+avant ce commit (vérifié par `git status` : aucune trace).
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres (page de test incluse puis retirée avant le build final).
+Rendu réel confirmé via `get_page_text` + `getComputedStyle` (voir
+ci-dessus) — pas une capture d'écran pixel, mais une vérification
+beaucoup plus poussée que le tour précédent.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

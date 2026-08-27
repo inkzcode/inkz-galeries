@@ -30,14 +30,19 @@ import { SendBurst } from "./send-burst";
 //    2026-08-25) : "au moment d'annoter" (ici) est un moment différent
 //    de "avant de découvrir les photos" (là-bas).
 //
-// Refonte du 2026-08-27 (retour d'Enzo, mockup à l'appui) : panneau clair
-// (la visionneuse n'a plus de fond sombre, voir lightbox.tsx), et les deux
-// blocs "image de soi" / "retouche" désormais visuellement distincts sans
-// être deux cards identiques — le premier reste discret (petite étiquette
-// rouge + texte éditorial, pas de fond), le second porte l'action (titre
-// en plus grand, bouton). Pas de fausse citation/source ajoutée : les
-// messages viennent de `trust-message-service.ts`, qui ne stocke qu'un
-// texte simple — inventer une source serait mentir au client.
+// Refonte du 2026-08-27 (mockup PRÉCIS d'Enzo, pas une inspiration — "je
+// veux que tu fasses la même chose") : grand guillemet décoratif rouge
+// au-dessus de la citation, bouton "Annoter cette photo" en crème/or
+// (pas rouge plein), et l'action de sélection déplacée en un grand
+// bouton "Ajouter à mes favoris" pleine largeur en bas du panneau — la
+// petite pastille cœur en tête de panneau du premier jet n'existe pas
+// dans le mockup, retirée au profit de ce bouton unique.
+//
+// Pas de fausse citation/source ajoutée sous la phrase éditoriale : le
+// mockup en montre une à titre d'exemple visuel, mais
+// `trust-message-service.ts` ne stocke qu'un texte simple, sans auteur
+// ni lien — en inventer une aurait affiché une fausse autorité
+// scientifique à de vrais clients.
 export function PhotoNotesPanel({
   gallerySlug,
   photoId,
@@ -63,8 +68,8 @@ export function PhotoNotesPanel({
   /** Retour d'Enzo, 2026-08-25 : "je veux [...] pouvoir aussi mettre un
    * cœur sur la photo [...] et que ça mette à jour [...] la galerie en
    * mode grille" — même état/action que le cœur de la grille
-   * (gallery-view.tsx), affiché ici en plus pour ne pas avoir à fermer
-   * la photo pour la sélectionner. */
+   * (gallery-view.tsx), ici sous la forme du bouton "Ajouter à mes
+   * favoris" en bas du panneau. */
   selected: boolean;
   locked: boolean;
   onToggleSelected: () => void;
@@ -148,28 +153,24 @@ export function PhotoNotesPanel({
   const isEmpty = notes.length === 0 && drafts.length === 0;
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border p-4">
-        <span className="text-sm font-medium text-ink">Cette photo</span>
-        <HeartButton selected={selected} locked={locked} onToggle={onToggleSelected} />
-      </div>
-
-      {/* Bloc éditorial — discret, pas de fond, juste une étiquette et une
-          fine règle rouge (point 7 : "petite respiration éditoriale",
-          point 9 : distinct du bloc retouche par la typo/l'espace, pas
-          par une card de couleur). */}
+    <div className="flex flex-col">
+      {/* Bloc éditorial — grand guillemet décoratif rouge, texte en serif,
+          dernière phrase mise en avant en italique/rouge (point 7 du
+          brief : "petite respiration éditoriale", point 9 : distinct du
+          bloc retouche par la typo, pas par une card de couleur). */}
       {hasTips && (
-        <div className="shrink-0 border-b border-border px-4 py-4">
+        <div className="border-b border-border p-5 sm:p-6">
           <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-accent uppercase">
             <span aria-hidden className="h-px w-4 bg-accent" />À garder en tête
           </div>
-          <p className="mt-2 text-sm leading-relaxed text-ink-soft italic">
-            {tips!.selfImageMessage}
-          </p>
+          <span aria-hidden className="mt-2 block font-serif text-4xl leading-none text-accent">
+            &ldquo;
+          </span>
+          <p className="mt-2 font-serif text-lg leading-snug text-ink">{tips!.selfImageMessage}</p>
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div className="max-h-[45vh] overflow-y-auto p-5 sm:p-6">
         {/* Bloc fonctionnel — porte l'action, contraste avec le bloc
             éditorial par un vrai titre et un bouton plein (point 8/9). */}
         <div className="mb-4">
@@ -177,9 +178,12 @@ export function PhotoNotesPanel({
             Un détail vous gêne ?
           </p>
           <p className="mt-1.5 font-serif text-lg font-semibold text-ink">
-            Entourez la zone et laissez-moi une note.
+            Entourez la zone
+            <br />
+            et laissez-moi une note.
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+          <span aria-hidden className="mt-2 block h-0.5 w-10 rounded-full bg-accent" />
+          <p className="mt-3 text-sm leading-relaxed text-ink-soft">
             Je peux corriger ou atténuer ces petits détails pendant la retouche. En
             revanche, je ne modifierai jamais votre morphologie ou les traits qui font
             de vous vous.
@@ -189,7 +193,7 @@ export function PhotoNotesPanel({
             onClick={onAnnotateHint}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            className="mt-3 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent-soft bg-accent-tint px-4 py-2 text-sm font-medium text-accent shadow-sm transition-colors hover:bg-accent-soft"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
@@ -289,20 +293,35 @@ export function PhotoNotesPanel({
         </div>
       </div>
 
-      <div className="relative shrink-0 border-t border-border p-4">
-        {error && <p className="mb-2 text-xs text-danger">{error}</p>}
-        <motion.button
-          type="button"
-          onClick={handleSave}
-          disabled={pending || !hasChanges}
-          whileHover={pending || !hasChanges ? undefined : { scale: 1.02 }}
-          whileTap={pending || !hasChanges ? undefined : { scale: 0.97 }}
-          className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-border disabled:text-muted disabled:opacity-100"
-        >
-          {pending ? "Enregistrement…" : "Enregistrer mes remarques"}
-        </motion.button>
-        <SendBurst triggerKey={sendTriggerKey} />
-      </div>
+      {/* Hors de la zone défilante — reste visible même avec beaucoup de
+          remarques (comportement d'avant cette refonte, conservé). */}
+      {hasChanges && (
+        <div className="relative border-t border-border p-5 sm:p-6">
+          {error && <p className="mb-2 text-xs text-danger">{error}</p>}
+          <motion.button
+            type="button"
+            onClick={handleSave}
+            disabled={pending}
+            whileHover={pending ? undefined : { scale: 1.02 }}
+            whileTap={pending ? undefined : { scale: 0.97 }}
+            className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-paper shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {pending ? "Enregistrement…" : "Enregistrer mes remarques"}
+          </motion.button>
+          <SendBurst triggerKey={sendTriggerKey} />
+        </div>
+      )}
+
+      {!locked && (
+        <div className="border-t border-border p-5 sm:p-6">
+          <HeartButton
+            selected={selected}
+            locked={locked}
+            onToggle={onToggleSelected}
+            label="Ajouter à mes favoris"
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -72,10 +72,18 @@ export function PhotoUploadForm({ galleryId }: { galleryId: string }) {
   // Réessaie directement les fichiers échoués — leur référence est
   // conservée (voir direct-photo-upload.ts), inutile pour Enzo de les
   // rechercher un par un (retour d'Enzo, 2026-08-25).
+  //
+  // Ne PAS effacer `state` ici (retour d'Enzo, 2026-08-27 : "je veux que
+  // ce message d'erreur ne s'enlève jamais tant que j'ai pas relancé et
+  // que les images sont bien importées") — l'ancienne liste d'échecs
+  // reste affichée pendant tout le nouvel essai (le bandeau de
+  // progression s'affiche par-dessus), remplacée seulement par le
+  // résultat réel une fois `runUpload` terminé. Avant ce correctif,
+  // `setState(undefined)` faisait disparaître l'erreur dès le clic sur
+  // "Réessayer", avant même de savoir si le nouvel essai avait réussi.
   function handleRetryFailed() {
     if (!state) return;
     const toRetry = state.unmatched.map((failure) => failure.file);
-    setState(undefined);
     runUpload(toRetry, []);
   }
 

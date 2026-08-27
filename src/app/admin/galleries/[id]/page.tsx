@@ -22,6 +22,7 @@ import { RetouchWorkspace, type RetouchPhoto } from "./retouch-workspace";
 import { DeleteGalleryButton } from "./delete-gallery-button";
 import { ArchiveGalleryButton } from "./archive-gallery-button";
 import { PortfolioCoverPicker } from "./portfolio-cover-picker";
+import { PhotoThumbnail } from "./photo-thumbnail";
 import { BackLink } from "../../../back-link";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
@@ -155,12 +156,7 @@ export default async function GalleryDetailPage({
                 className="group overflow-hidden rounded-md border border-border bg-surface transition-shadow hover:shadow-md"
               >
                 {photo.previewUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- URLs de preview signées/locales, non compatibles avec l'optimiseur next/image (voir storage/README.md).
-                  <img
-                    src={photo.previewUrl}
-                    alt={photo.filename}
-                    className="aspect-[3/2] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                  />
+                  <PhotoThumbnail src={photo.previewUrl} alt={photo.filename} />
                 ) : (
                   <div className="flex aspect-[3/2] w-full items-center justify-center text-xs text-muted">
                     Pas d&apos;aperçu

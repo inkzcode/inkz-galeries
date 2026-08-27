@@ -2860,6 +2860,54 @@ une vraie sélection verrouillée puis déverrouillée dans un navigateur,
 faute de galerie de test avec sélection réelle dans cet environnement. À
 confirmer par Enzo.
 
+## 6duetquadragies. Taches monochromes + vrai bug de retry qui effaçait l'erreur trop tôt (2026-08-27)
+
+**Retour sur les taches de couleur** (retour d'Enzo, même jour : "les
+taches de couleurs sont pas belles, le mélange est bizarre, si il y avait
+1 tache rouge et une tache or ok mais les deux ensemble sont pas beau") —
+le dégradé rouge→or à l'intérieur d'une même tache (§6unetquadragies)
+était visiblement raté. Remplacé par deux taches strictement monochromes
+(une rouge à 40% d'opacité, une or à 60%, jamais mélangées dans une même
+forme), la troisième tache (or, redondante avec la deuxième) retirée —
+exactement "1 tache rouge et une tache or" comme demandé. Le bandeau
+`.brand-band` (dégradé en ligne fine, pas une tache floue) n'est pas
+concerné par ce retour — Enzo ne l'a pas mentionné, et un dégradé sur une
+ligne fine est visuellement très différent d'un dégradé mélangé dans une
+tache floue large.
+
+**Vrai bug trouvé dans le flux de retry construit hier** (retour d'Enzo :
+"quand des images marchent pas [...] je veux que ce message d'erreur ne
+s'enlève jamais tant que j'ai pas relancé et que les images sont bien
+importées") — `handleRetryFailed()` (`photo-upload-form.tsx`) faisait
+`setState(undefined)` AVANT de relancer l'import, effaçant la liste
+d'échecs de l'écran dès le clic sur "Réessayer" — avant même de savoir si
+le nouvel essai allait réussir. Un import qui échouait à nouveau donnait
+l'impression trompeuse que "réessayer" avait réglé le problème, le temps
+que le nouveau résultat arrive. Corrigé en une ligne : ne plus effacer
+`state`, il reste affiché tout du long (le bandeau de progression
+s'affiche par-dessus pendant l'essai) et n'est remplacé que par le
+résultat réel une fois `runUpload()` terminé — s'il échoue encore, ça se
+voit tout de suite dans la même liste.
+
+**Couverture complémentaire, pas explicitement demandée mais liée** :
+"quand des images marchent pas" pouvait aussi désigner une miniature déjà
+importée dont l'URL existe mais dont le CHARGEMENT échoue dans le
+navigateur (cap B2, incohérence de lecture après écriture...) — jusqu'ici
+ça affichait juste une icône d'image cassée sans explication. Nouveau
+`photo-thumbnail.tsx` : détecte l'échec de chargement (`onError`), affiche
+"Aperçu indisponible" + bouton "Réessayer" qui force un vrai nouveau
+`<img>` (`key` incrémentée, jamais un paramètre ajouté à l'URL — casserait
+la signature d'une URL présignée S3/B2). L'état d'erreur ne disparaît que
+si le nouvel essai charge réellement.
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. Taches vérifiées en direct dans le navigateur
+(`getComputedStyle` confirme deux formes, chacune `background-image:
+none`, une rouge une or, aucun dégradé). Correctif de retry vérifié par
+lecture de code (changement d'une ligne, comportement direct) — pas
+cliqué en conditions réelles avec un vrai échec d'import puis un retry
+réussi, faute d'environnement B2 réel ici.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

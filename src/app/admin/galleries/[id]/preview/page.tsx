@@ -64,7 +64,7 @@ export default async function GalleryClientPreviewPage({
     const selfImageMessages = publicGallery.selfImageMessagesEnabled
       ? await getActiveTrustMessages()
       : [];
-    view = <GalleryView gallery={publicGallery} selfImageMessages={selfImageMessages} />;
+    view = <GalleryView gallery={publicGallery} selfImageMessages={selfImageMessages} isPreview />;
   }
 
   return (

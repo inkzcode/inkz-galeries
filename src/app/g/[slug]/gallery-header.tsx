@@ -17,9 +17,13 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
 export function GalleryHeader({
   gallery,
   coverPhoto,
+  isPreview = false,
 }: {
   gallery: PublicGallery;
   coverPhoto: PublicGalleryPhoto | null;
+  /** Voir gallery-view.tsx — repli sur un aperçu générique en cas
+   * d'échec de chargement, uniquement en aperçu admin. */
+  isPreview?: boolean;
 }) {
   return (
     <motion.header
@@ -54,6 +58,9 @@ export function GalleryHeader({
             <img
               src={coverPhoto.previewUrl}
               alt=""
+              onError={(event) => {
+                if (isPreview) event.currentTarget.src = "/photo-placeholder.svg";
+              }}
               style={
                 coverPhoto.width && coverPhoto.height
                   ? { aspectRatio: `${coverPhoto.width} / ${coverPhoto.height}` }

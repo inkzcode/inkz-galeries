@@ -29,9 +29,17 @@ const tile: Variants = {
 export function GalleryView({
   gallery,
   selfImageMessages,
+  isPreview = false,
 }: {
   gallery: PublicGallery;
   selfImageMessages?: string[];
+  /** Aperçu admin (voir preview/page.tsx) — retour d'Enzo, 2026-08-27 :
+   * "quand les photos ne s'affichent pas à cause du 1 Go par jour [...]
+   * juste côté admin photographe" pour pouvoir continuer à juger la mise
+   * en page pendant un dépassement de quota B2, sans jamais montrer un
+   * faux visuel à un vrai client (voir onImageError plus bas, strictement
+   * gardé par ce drapeau). */
+  isPreview?: boolean;
 }) {
   const [photos, toggleOptimistic] = useOptimistic(
     gallery.photos,
@@ -147,6 +155,17 @@ export function GalleryView({
     }));
   }
 
+  // Retour d'Enzo, 2026-08-27 : quand le quota B2 (1 Go/jour) est
+  // dépassé, toutes les images échouent à charger d'un coup — impossible
+  // de juger la mise en page pendant ce temps. En aperçu admin
+  // UNIQUEMENT (jamais côté vrai client — ce serait montrer un faux
+  // visuel), une image qui échoue est remplacée par un aperçu générique,
+  // juste pour voir le rythme de la grille.
+  function handleImageError(event: React.SyntheticEvent<HTMLImageElement>) {
+    if (!isPreview) return;
+    event.currentTarget.src = "/photo-placeholder.svg";
+  }
+
   return (
     <div className="pb-28">
       {/* Retour d'Enzo, 2026-08-27 : "un petit bouton pour retourner vers
@@ -156,7 +175,7 @@ export function GalleryView({
         <BackLink href="/" label="Retour au site" />
       </div>
 
-      <GalleryHeader gallery={gallery} coverPhoto={coverPhoto} />
+      <GalleryHeader gallery={gallery} coverPhoto={coverPhoto} isPreview={isPreview} />
 
       {gallery.retouchPhilosophyEnabled && <RawDisclaimer />}
 
@@ -200,6 +219,7 @@ export function GalleryView({
                 src={photo.previewUrl}
                 alt=""
                 onClick={() => openLightbox(viewablePhotos.findIndex((p) => p.id === photo.id))}
+                onError={handleImageError}
                 style={
                   photo.width && photo.height
                     ? { aspectRatio: `${photo.width} / ${photo.height}` }

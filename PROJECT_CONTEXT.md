@@ -3077,6 +3077,46 @@ propres. Toujours pas de vérification visuelle en direct dans un
 navigateur (même limite que le §6quatretquadragies) — à confirmer par
 Enzo sur le déploiement réel.
 
+**Premier vrai retour visuel, avec capture d'écran** : la composition
+fonctionne (kicker, grand titre, lien retour, barre de sélection fine) —
+mais le quota B2 journalier était de nouveau dépassé au moment du test,
+cassant le chargement de la couverture. Suite immédiate au §6septetquadragies.
+
+## 6septetquadragies. Aperçu générique en admin quand le quota B2 est dépassé (2026-08-27)
+
+Retour d'Enzo, immédiatement après avoir vu la refonte en vrai : "quand
+les photos ne s'affichent pas à cause du 1 Go par jour [...] juste côté
+admin photographe, pour que je puisse continuer à travailler et voir à
+quoi ressemble la galerie s'il y avait de vraies photos". Un vrai
+problème de productivité découvert en marge de la refonte, pas juste un
+retour esthétique — le quota B2 casse le développement lui-même dès
+qu'il est atteint, jusqu'ici sans échappatoire.
+
+- **`public/photo-placeholder.svg`** (nouveau) — un aperçu générique
+  simple (icône appareil photo, fond neutre, légende "Aperçu
+  indisponible"), pas une vraie photo (aucun asset photographique
+  disponible dans cet environnement, et en emprunter un en ligne aurait
+  posé un problème de droits) — but assumé : juger le RYTHME de la mise
+  en page, pas remplacer une vraie image.
+- **`isPreview` propagé** dans `GalleryView`/`GalleryHeader` (déjà le nom
+  utilisé par `DeliveryView` pour le même concept, depuis que l'aperçu
+  admin est devenu réellement interactif) — `preview/page.tsx` passe
+  maintenant `isPreview` à `GalleryView` aussi (avant : seul
+  `DeliveryView` le recevait).
+- **Détection automatique** (choisi plutôt qu'un bouton manuel, Enzo
+  proposait les deux) — `onError` sur chaque `<img>` (couverture du
+  header ET grille), bascule vers le placeholder UNIQUEMENT si
+  `isPreview` est vrai. Chez un vrai client, `isPreview` est toujours
+  `false` : une image cassée reste cassée, jamais remplacée par un faux
+  visuel — c'était la limite explicite de la demande ("juste côté
+  admin").
+
+Vérifié : `tsc`/`eslint`/86 tests/build de production complet tous
+propres. `photo-placeholder.svg` vérifié servi (200) et rendu comme
+image valide par le navigateur (pas de test du déclenchement `onError`
+en conditions réelles de quota dépassé — nécessiterait de vraies clés B2
+capées, absentes de cet environnement).
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

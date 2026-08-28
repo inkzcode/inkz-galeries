@@ -1,6 +1,8 @@
 import { listPortfolioEntries } from "@/lib/services/portfolio-service";
+import { listBeforeAfterExamples } from "@/lib/services/before-after-service";
 import { HomeIntro } from "./home-intro";
 import { PortfolioGrid } from "./portfolio-grid";
+import { BeforeAfterShowcase } from "./before-after-showcase";
 import { HomeFooter } from "./home-footer";
 
 // Rendue à la demande, pas figée au build (même raisonnement que
@@ -16,11 +18,29 @@ export const dynamic = "force-dynamic";
 // animé (hors de portée d'un Server Component, motion exige "use client")
 // reste dans home-intro.tsx.
 export default async function Home() {
-  const portfolioEntries = await listPortfolioEntries();
+  const [portfolioEntries, beforeAfterExamples] = await Promise.all([
+    listPortfolioEntries(),
+    listBeforeAfterExamples(),
+  ]);
 
   return (
     <main className="relative overflow-hidden">
       <HomeIntro />
+
+      {beforeAfterExamples.length > 0 && (
+        <section className="relative px-6 py-20 sm:px-10">
+          <div className="mx-auto max-w-6xl">
+            <p className="text-sm tracking-wide text-muted uppercase">Retouche</p>
+            <h2 className="mt-2 font-serif text-3xl font-bold text-ink sm:text-4xl">Avant / après</h2>
+            <p className="mt-2 max-w-xl text-ink-soft">
+              Passez la souris sur une photo pour découvrir le résultat.
+            </p>
+            <div className="mt-10">
+              <BeforeAfterShowcase examples={beforeAfterExamples} />
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="relative px-6 py-20 sm:px-10">
         <div aria-hidden className="brand-band absolute top-0 h-[3px] w-full opacity-70" />

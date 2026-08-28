@@ -20,6 +20,15 @@ export type PortfolioEntry = {
   shootingType: string | null;
   coverUrl: string;
   createdAt: Date;
+  // Retour d'Enzo, 2026-08-29 : "une galerie avec des couvertures et
+  // quand on clique ça dévoile le reste du shooting" — URLs résolues des
+  // autres photos finales de CE shooting, uniquement pour les entrées
+  // venant d'une galerie. `null` (pas juste un tableau vide) signale
+  // explicitement "rien à dévoiler" pour un PortfolioItem autonome, qui
+  // n'a structurellement aucun shooting derrière lui — portfolio-grid.tsx
+  // s'en sert pour ne jamais proposer un "voir plus" qui n'aurait rien à
+  // montrer.
+  photos: string[] | null;
 };
 
 export async function listPortfolioEntries(): Promise<PortfolioEntry[]> {
@@ -35,6 +44,17 @@ export async function listPortfolioEntries(): Promise<PortfolioEntry[]> {
         shootingType: true,
         createdAt: true,
         portfolioCoverPhoto: { select: { finalKey: true } },
+        // Volontairement TOUTES les photos finales du shooting, pas
+        // seulement celles sélectionnées par le client — à la différence
+        // de final-delivery-service.ts (qui scope à ce que LE CLIENT a
+        // choisi pour SA propre livraison privée), la portée ici est
+        // "tout ce qu'Enzo a choisi de rendre public en activant
+        // portfolioEnabled sur ce shooting". Jamais originalKey/previewKey.
+        photos: {
+          where: { finalKey: { not: null } },
+          select: { finalKey: true },
+          orderBy: { sortOrder: "asc" },
+        },
       },
     }),
     prisma.portfolioItem.findMany(),
@@ -51,6 +71,9 @@ export async function listPortfolioEntries(): Promise<PortfolioEntry[]> {
       // refuse toute photo sans fichier final avant de l'accepter comme
       // couverture (voir gallery-service.ts).
       coverUrl: await storage.getPreviewUrl(gallery.portfolioCoverPhoto!.finalKey!),
+      photos: await Promise.all(
+        gallery.photos.map((photo) => storage.getPreviewUrl(photo.finalKey!)),
+      ),
     })),
   );
 
@@ -62,6 +85,7 @@ export async function listPortfolioEntries(): Promise<PortfolioEntry[]> {
       shootingType: item.category,
       createdAt: item.createdAt,
       coverUrl: await storage.getPreviewUrl(item.imageKey),
+      photos: null,
     })),
   );
 

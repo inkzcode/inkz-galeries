@@ -36,3 +36,16 @@ export function buildPortfolioItemObjectKey(params: {
 }): string {
   return `portfolio/${params.itemId}/image.${sanitizeExtension(params.extension)}`;
 }
+
+// Paires avant/après de la vitrine publique (BeforeAfterExample dans
+// schema.prisma, retour d'Enzo 2026-08-29) — même principe de préfixe
+// distinct que ci-dessus.
+export type BeforeAfterSide = "before" | "after";
+
+export function buildBeforeAfterObjectKey(params: {
+  exampleId: string;
+  side: BeforeAfterSide;
+  extension: string;
+}): string {
+  return `before-after/${params.exampleId}/${params.side}.${sanitizeExtension(params.extension)}`;
+}

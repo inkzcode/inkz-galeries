@@ -22,6 +22,12 @@ export default async function AdminDashboard() {
             Portfolio
           </Link>
           <Link
+            href="/admin/before-after"
+            className="inline-flex items-center justify-center rounded-md border border-border px-5 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:border-ink hover:text-ink"
+          >
+            Avant/après
+          </Link>
+          <Link
             href="/admin/galleries/new"
             className="inline-flex items-center justify-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-paper shadow-sm hover:-translate-y-0.5 hover:shadow-md"
           >

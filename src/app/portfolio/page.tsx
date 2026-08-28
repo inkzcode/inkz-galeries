@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { listPortfolioEntries } from "@/lib/services/portfolio-service";
+import { listBeforeAfterExamples } from "@/lib/services/before-after-service";
 import { PortfolioGrid } from "../portfolio-grid";
+import { BeforeAfterShowcase } from "../before-after-showcase";
 import { BackLink } from "../back-link";
 
 export const metadata = {
@@ -20,7 +22,10 @@ export const dynamic = "force-dynamic";
 // cas par défaut. Lien direct partageable — la même grille est aussi
 // intégrée directement sur la page d'accueil (voir page.tsx).
 export default async function PortfolioPage() {
-  const entries = await listPortfolioEntries();
+  const [entries, beforeAfterExamples] = await Promise.all([
+    listPortfolioEntries(),
+    listBeforeAfterExamples(),
+  ]);
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
@@ -30,6 +35,19 @@ export default async function PortfolioPage() {
       <p className="mt-2 max-w-xl text-ink-soft">
         Une sélection de séances passées, classées par shooting.
       </p>
+
+      {beforeAfterExamples.length > 0 && (
+        <div className="mt-14">
+          <p className="text-sm tracking-wide text-muted uppercase">Retouche</p>
+          <h2 className="mt-2 font-serif text-2xl font-bold text-ink sm:text-3xl">Avant / après</h2>
+          <p className="mt-2 max-w-xl text-ink-soft">
+            Passez la souris sur une photo pour découvrir le résultat.
+          </p>
+          <div className="mt-8">
+            <BeforeAfterShowcase examples={beforeAfterExamples} />
+          </div>
+        </div>
+      )}
 
       {entries.length === 0 ? (
         <p className="mt-16 text-sm text-muted">

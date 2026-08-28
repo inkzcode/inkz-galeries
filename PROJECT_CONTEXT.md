@@ -3635,6 +3635,84 @@ Vercel, il faudra un vrai webhook configuré depuis le dashboard Stripe
 avec l'URL de production, et un nouveau `STRIPE_WEBHOOK_SECRET` (celui-là
 permanent) posé dans les variables d'environnement Vercel.
 
+## 6cinquante-quatrièmes. Vitrine avant/après publique + portfolio qui dévoile le shooting (2026-08-29)
+
+Enzo, ayant des shootings gratuits à rendre, veut que le site soit "parfait
+pour son premier client" — deux fonctionnalités concrètes en ressortent,
+posées avec un plan complet (`EnterPlanMode`, deux agents d'exploration
+en parallèle + un agent de conception), comme pour Stripe.
+
+**Découverte identique à celle de Stripe** : le schéma était déjà préparé.
+`BeforeAfterExample` (`beforeKey`/`afterKey`/`caption`, `galleryId`
+optionnel) existait déjà en base, migré, jamais utilisé — même table
+"posée à l'avance" que `Payment` l'était. **Aucune migration Prisma.**
+Le bouton admin existant "Montrer des exemples avant/après post-production"
+(`Gallery.beforeAfterEnabled`) correspondait à une interprétation
+différente du brief (par galerie privée) — Enzo a explicitement tranché
+pour une vitrine PUBLIQUE à la place (confirmé par question directe :
+portfolio/home, pas les galeries clients). **Ce bouton reste inchangé,
+non branché** — hors périmètre de ce chantier.
+
+**Volet 1 — vitrine avant/après.** Interaction précisée par Enzo : survol
+révèle l'après (pas de clic-glisser), animation légère qui rend le
+principe immédiatement compréhensible, rotation automatique toutes les
+5 secondes entre plusieurs paires. Technique retenue : fondu enchaîné
+(crossfade), pas un wipe/clip-path — un curseur à glisser évoquerait
+visuellement une poignée, exactement ce qu'Enzo a écarté. Reprend la
+même courbe d'animation (`[0.2, 0.7, 0.3, 1]`) déjà utilisée dans
+`lightbox.tsx`. Nouveaux fichiers : `src/lib/services/before-after-service.ts`,
+`src/app/admin/before-after/*` (miroir du pipeline `PortfolioItem`, mais
+DEUX fichiers par entrée — formulaire avec aperçu miniature de chaque
+image avant envoi pour éviter de confondre avant/après, seule vraie
+nouveauté technique de ce formulaire), `src/app/before-after-showcase.tsx`
+(le composant public). Premier `setInterval` de rotation VISUELLE du
+site (les deux seuls existants étaient du polling `router.refresh()`,
+pas de la rotation de contenu) — gère donc `prefers-reduced-motion`
+manuellement via `useSyncExternalStore` (pas de `useEffect`+`setState`,
+qui aurait déclenché le même lint `react-hooks/set-state-in-effect` que
+pour Stripe) : désactive le fondu ET arrête la rotation elle-même, pas
+seulement sa transition.
+
+**Volet 2 — portfolio qui dévoile le shooting.** `PortfolioEntry` gagne
+`photos: string[] | null` — toutes les photos `finalKey` du shooting pour
+une entrée venant d'une galerie (`portfolioEnabled`), `null` pour un
+`PortfolioItem` autonome (rien à dévoiler, signal explicite). Divergence
+volontaire de `final-delivery-service.ts` : ici, TOUTES les photos
+finales du shooting sont montrées, pas seulement celles sélectionnées
+par le client — la portée est "ce qu'Enzo a choisi de rendre public",
+pas "ce que le client a payé". `portfolio-grid.tsx` réutilise la
+visionneuse existante (`g/[slug]/lightbox.tsx`) TELLE QUELLE : avec un
+tableau d'une seule photo (`PortfolioItem`), elle cache déjà ses flèches
+d'elle-même — aucun nouveau composant, aucun branchement supplémentaire
+pour éviter un faux "voir plus".
+
+**Vérifié en conditions réelles** (galerie/photo/exemple avant-après/item
+de test créés directement en base + fichiers copiés dans
+`public/dev-previews/`, tout supprimé après coup) :
+- Structure/contenu confirmés via `get_page_text` : section "Avant /
+  après" affichée avec la légende de test, section portfolio affichant
+  les deux entrées de test.
+- Clic sur l'entrée venant d'une galerie (3 photos finales de test) →
+  visionneuse ouverte avec "1 / 3" et la flèche suivante présente.
+- Clic sur l'entrée `PortfolioItem` (1 seule image) → visionneuse
+  ouverte avec "1 / 1", **aucune** flèche — confirme que la réutilisation
+  de `Lightbox` fonctionne exactement comme prévu, sans code de
+  branchement.
+- Logique de survol confirmée en appelant directement `onMouseEnter`/
+  `onMouseLeave` via la fibre React (l'étiquette "Avant"/"Après" change
+  bien) — **mais pas le rendu animé lui-même** : comme pour le fondu de
+  la visionneuse plus tôt dans cette session, le Browser pane n'étant pas
+  affiché côté utilisateur, `document.hidden` reste `true` même onglet au
+  premier plan, ce qui empêche `requestAnimationFrame` (donc les
+  animations Framer Motion) de tourner. La logique d'état est donc
+  vérifiée avec certitude ; le rendu final du fondu — fluide ou non,
+  rythme de 5 secondes adapté ou non — reste à confirmer par Enzo en
+  conditions réelles, exactement comme anticipé dans le plan avant même
+  de coder.
+
+Vérifié : `tsc`/`eslint`/94 tests (90 + 4 nouveaux pour
+`buildBeforeAfterObjectKey`)/build de production complet, tous propres.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

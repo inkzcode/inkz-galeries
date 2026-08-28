@@ -3601,6 +3601,40 @@ essentiellement ce qu'il était avant Stripe. Une leçon de plus sur
 l'écart entre un plan bien conçu sur le papier et ce qu'un vrai test en
 conditions réelles révèle.
 
+**Le même jour — vérification finale, paiement réel de bout en bout.**
+CLI Stripe installée (téléchargement direct, pas de Scoop) et connectée
+au compte d'Enzo. Piège rencontré : le contexte par défaut de la CLI
+était "live" (mode réel) — `stripe listen` refusait de démarrer sans
+`--live` explicite. Contourné en forçant `--api-key sk_test_...` (la clé
+de TEST déjà utilisée par l'app) plutôt que de toucher au contexte
+live/sandbox — une clé de test ne peut de toute façon jamais déclencher
+un vrai paiement, quel que soit le contexte de la CLI. `stripe listen
+--forward-to localhost:3000/api/stripe-webhook --api-key sk_test_...`
+lancé en tâche de fond, secret de webhook réel récupéré et posé dans
+`.env.local` (remplace le placeholder).
+
+Galerie/photo/sélection/code d'accès jetables recréés, puis **Enzo
+lui-même** a réalisé le parcours complet dans son navigateur (carte de
+test `4242 4242 4242 4242`) — étape que l'assistant ne pouvait pas faire
+seul (les champs de carte Stripe sont dans des iframes protégées, et
+capture d'écran indisponible dans cet environnement pour cliquer dedans
+visuellement). Résultat vérifié directement en base après coup :
+- `Payment` : `provider: "stripe"`, vrai `providerPaymentId`
+  (`pi_3U9XX8...`), `status: "PAID"`, `paidAt` renseigné.
+- `Gallery.status` : `PAYMENT_PENDING → TO_RETOUCH`.
+- `StatusHistory` : les deux transitions présentes, la seconde avec la
+  note "Paiement confirmé via Stripe", `changedBy: "SYSTEM"`.
+
+Le paiement Stripe est donc maintenant vérifié à 100% de bout en bout —
+vraie carte, vraie API Stripe, vrai webhook signé, vraie transaction
+Prisma. Tout nettoyé ensuite (galerie/photo/sélection/code de test
+supprimés). Reste ouvert : `stripe listen` est une solution LOCALE
+temporaire (le secret de webhook qu'elle génère ne fonctionne que tant
+que cette commande tourne sur le PC d'Enzo) — une fois déployé sur
+Vercel, il faudra un vrai webhook configuré depuis le dashboard Stripe
+avec l'URL de production, et un nouveau `STRIPE_WEBHOOK_SECRET` (celui-là
+permanent) posé dans les variables d'environnement Vercel.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

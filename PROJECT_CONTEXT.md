@@ -3564,6 +3564,43 @@ compilation :
   requise) — même blocage que pour Resend, impossible de créer un compte
   tiers à sa place.
 
+**Suite le même jour — Enzo donne ses vraies clés de test.** Collées en
+clair dans le chat (`pk_test_...`/`sk_test_...`) — ajoutées à
+`.env.local` (jamais committé). `STRIPE_WEBHOOK_SECRET` posé à un
+placeholder temporaire (juste pour que `getStripeClient()` considère
+Stripe "configuré" — la vraie confirmation de paiement attendra la vraie
+config du webhook, voir §7).
+
+Deux vérifications réelles supplémentaires, cette fois avec le vrai
+compte Stripe d'Enzo (scripts jetables, supprimés après usage) :
+1. Appel direct à l'API Stripe (`paymentIntents.create` puis `.cancel`)
+   — confirme que la clé secrète est valide et fonctionne.
+2. **Parcours complet dans le navigateur, pour de vrai** : galerie/photo/
+   sélection/code d'accès jetables créés en base, connexion via le VRAI
+   formulaire de code d'accès (pas de session forgée), sélection déjà
+   prête, clic sur "Confirmer ma sélection" → récapitulatif → "Confirmer
+   définitivement" → le vrai formulaire de paiement Stripe s'affiche avec
+   le bon montant ("5.00 EUR"). Nettoyé ensuite (PaymentIntent Stripe
+   annulé + toutes les lignes de test supprimées).
+
+**Découverte réelle en testant, qui a fait revenir sur un choix du
+plan initial** : le plan prévoyait de garder la modale de récapitulatif
+ouverte et de remplacer son contenu par le formulaire de paiement, sans
+jamais appeler `router.refresh()` dans ce cas précis. En testant pour de
+vrai : la page bascule TOUJOURS vers `PaymentView` immédiatement après
+la confirmation, modale ou pas — appeler un Server Action depuis un
+composant client déclenche de lui-même un rafraîchissement de la route
+en cours (comportement Next.js, indépendant de tout `router.refresh()`
+explicite). Le formulaire de paiement s'affiche donc bien (toujours sur
+la même page, jamais de redirection externe — ce qui comptait vraiment
+pour Enzo), juste via une transition de page plutôt qu'un morphing de
+modale en douceur. `confirm-selection-bar.tsx` simplifié en conséquence :
+le code qui essayait de garder la modale ouverte pour le paiement a été
+retiré (il ne s'affichait jamais), `handleConfirm` redevient
+essentiellement ce qu'il était avant Stripe. Une leçon de plus sur
+l'écart entre un plan bien conçu sur le papier et ce qu'un vrai test en
+conditions réelles révèle.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

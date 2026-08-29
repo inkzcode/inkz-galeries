@@ -54,32 +54,53 @@ export function PortfolioGrid({ entries }: { entries: PortfolioEntry[] }) {
         whileInView="show"
         viewport={{ once: true, margin: "-80px" }}
       >
-        {entries.map((entry) => (
-          <motion.button
-            type="button"
-            key={entry.id}
-            variants={tile}
-            whileHover={{ y: -4 }}
-            onClick={() => handleOpen(entry)}
-            className="group relative mb-4 block w-full break-inside-avoid overflow-hidden rounded-md bg-surface text-left"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- URL de preview signée/locale, voir storage/README.md */}
-            <img
-              src={entry.coverUrl}
-              alt={entry.title}
-              className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent px-4 pt-10 pb-3">
-              <p className="font-serif text-lg font-semibold text-paper">{entry.title}</p>
-              {entry.shootingType && (
-                <p className="text-xs tracking-wide text-paper/70 uppercase">{entry.shootingType}</p>
-              )}
-              {entry.description && (
-                <p className="mt-1 line-clamp-2 text-sm text-paper/85">{entry.description}</p>
-              )}
-            </div>
-          </motion.button>
-        ))}
+        {entries.map((entry) => {
+          const photoCount = entry.photos?.length ?? 1;
+          return (
+            <motion.button
+              type="button"
+              key={entry.id}
+              variants={tile}
+              whileHover={{ y: -6 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.3, ease: [0.2, 0.7, 0.3, 1] }}
+              onClick={() => handleOpen(entry)}
+              className="group relative mb-4 block w-full break-inside-avoid overflow-hidden rounded-md bg-surface text-left"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- URL de preview signée/locale, voir storage/README.md */}
+              <img
+                src={entry.coverUrl}
+                alt={entry.title}
+                className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+              />
+
+              {/* Voile + icône qui invitent au clic (retour d'Enzo,
+                  2026-08-29 : "rajoute un max d'animation") — distinct du
+                  bandeau de titre toujours visible en dessous. */}
+              <div className="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-all duration-300 group-hover:bg-ink/25 group-hover:opacity-100">
+                <span className="flex -translate-y-2 scale-90 items-center gap-1.5 rounded-full bg-paper/95 px-3.5 py-1.5 text-xs font-medium text-ink opacity-0 shadow-sm transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor" />
+                    <rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor" />
+                    <rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor" />
+                    <rect x="13" y="13" width="8" height="8" rx="1.5" fill="currentColor" />
+                  </svg>
+                  {photoCount > 1 ? `Voir les ${photoCount} photos` : "Voir la photo"}
+                </span>
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent px-4 pt-10 pb-3 transition-transform duration-300 group-hover:-translate-y-1">
+                <p className="font-serif text-lg font-semibold text-paper">{entry.title}</p>
+                {entry.shootingType && (
+                  <p className="text-xs tracking-wide text-paper/70 uppercase">{entry.shootingType}</p>
+                )}
+                {entry.description && (
+                  <p className="mt-1 line-clamp-2 text-sm text-paper/85">{entry.description}</p>
+                )}
+              </div>
+            </motion.button>
+          );
+        })}
       </motion.div>
 
       <Lightbox

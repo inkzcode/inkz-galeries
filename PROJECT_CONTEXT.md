@@ -3713,6 +3713,79 @@ de test créés directement en base + fichiers copiés dans
 Vérifié : `tsc`/`eslint`/94 tests (90 + 4 nouveaux pour
 `buildBeforeAfterObjectKey`)/build de production complet, tous propres.
 
+## 6cinquante-cinquièmes. Contenu de démo + animations enrichies (2026-08-29)
+
+Suite immédiate — Enzo n'a pas encore de vraies photos avant/après ni de
+shootings publiables, mais veut "aller au bout" quand même : "développe
+ton idée avec les fausses photos de mon logo, mets par exemple en noir
+et blanc pour le avant et couleur après [...] rajoute un max
+d'animation [...] donne quelque chose quitte à changer après".
+
+**Contenu de démo, réellement persisté (pas un test jetable supprimé
+après coup)** — script `seed-demo-content.ts` (exécuté une fois puis
+supprimé, comme un script `prisma/seed-*` à usage unique) :
+- 2 paires avant/après utilisant le logo Inkz — version "avant" passée
+  en niveaux de gris via `sharp` (déjà une dépendance du projet,
+  `lib/imaging/generate-preview.ts`), version "après" en couleur.
+  Vérifié après coup : les 3 canaux de l'image "avant" ont une moyenne
+  identique (212.4/212.4/212.4 — vraiment gris), ceux de l'image "après"
+  diffèrent nettement (226.5/209.0/195.6 — vraiment en couleur).
+- 6 entrées de portfolio, en reprenant les noms de shootings qu'Enzo
+  avait lui-même donnés bien plus tôt dans cette session (Clair obscur,
+  Iris, Balades, Études de lumière, Skatepark, Portraits du cœur) plutôt
+  que d'inventer des titres génériques — chacune préfixée "[DÉMO]" et
+  avec une description explicite ("Photo de substitution en attendant
+  tes vraies photos") pour qu'Enzo les retrouve et les supprime
+  facilement une fois ses vraies photos prêtes (via `/admin/portfolio`,
+  déjà construit).
+
+**Stockage local uniquement pour l'instant** — Enzo gère son site en
+ligne sur Vercel (confirmé) mais navigue mal dans les variables
+d'environnement Vercel pour retrouver les 4 infos B2 manquantes
+(endpoint/région/noms de buckets — les clés d'accès seules ne suffisent
+pas). Comme la base de données est partagée entre le développement local
+et la production, ces entrées de démo existent déjà dans la vraie base
+mais leurs images ne sont, pour l'instant, QUE sur cette machine
+(`public/dev-previews/`, gitignoré) — elles s'afficheraient cassées sur
+le vrai site en ligne tant que les vraies infos B2 ne sont pas
+récupérées et les fichiers migrés. Signalé clairement à Enzo ; pas
+bloquant pour voir le résultat en local (`http://localhost:3000`, sur sa
+propre machine).
+
+**Animations enrichies** (retour d'Enzo : "rajoute un max d'animation
+comme tu sais bien faire") :
+- `before-after-showcase.tsx` : entrée `whileInView`, lever au survol de
+  toute la carte, fondu-enchaîné animé entre les paires lors de la
+  rotation automatique (`AnimatePresence mode="popLayout"`, pas juste un
+  changement brut de `src`), étiquette "Avant"/"Après" qui glisse au lieu
+  de changer instantanément, petits points de progression sous la carte
+  (un par exemple, celui actif plus large et coloré en rouge Inkz), et
+  un **aperçu automatique une seule fois au montage** (bref passage à
+  "après" puis retour, ~800ms) — pour qu'un visiteur qui ne pense pas
+  spontanément à survoler comprenne quand même le principe dès l'arrivée
+  sur la page, avant toute interaction. Un petit texte "Survolez pour
+  révéler" apparaît brièvement puis disparaît définitivement dès la
+  première interaction réelle (survol ou tap).
+- `portfolio-grid.tsx` : voile sombre + pastille "Voir les N photos" (ou
+  "Voir la photo" pour un élément autonome) qui apparaît au survol,
+  glissement du bandeau de titre, léger agrandissement de l'image plus
+  prononcé qu'avant (`scale-[1.06]` contre `1.03`) — rend le fait que la
+  couverture soit cliquable beaucoup plus évident qu'avant (elle ne
+  l'était pas visuellement du tout dans la première version).
+
+**Vérifié en conditions réelles** (contenu de démo réel, pas un test
+jetable) : `get_page_text` confirme les deux sections affichées avec le
+bon contenu, les deux images de chaque paire chargées avec succès
+(200 OK), le clic sur une couverture de portfolio ouvre bien la
+visionneuse. Comme pour la vitrine avant/après plus tôt aujourd'hui, le
+rendu ANIMÉ lui-même (fluidité du fondu, de l'aperçu automatique, des
+transitions de survol) reste à confirmer par Enzo en conditions réelles
+— même limite d'environnement déjà documentée (`document.hidden` bloque
+`requestAnimationFrame`).
+
+Vérifié : `tsc`/`eslint`/94 tests/build de production complet, tous
+propres.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

@@ -4,6 +4,7 @@ import { verifySession } from "@/lib/auth/dal";
 import { getGalleryById, listGalleryPhotos } from "@/lib/services/gallery-service";
 import { listAccessCodes } from "@/lib/services/access-code-service";
 import { listGalleryPhotoNotes } from "@/lib/services/photo-note-service";
+import { parseDrawingPath } from "@/lib/domain/photo-note";
 import { getSelectedPhotos } from "@/lib/services/confirm-selection-service";
 import { listDeliverablePhotos } from "@/lib/services/final-delivery-service";
 import { getStorageAdapter } from "@/lib/storage/client";
@@ -142,6 +143,7 @@ export default async function GalleryDetailPage({
       id: note.id,
       message: note.message,
       color: note.color,
+      drawingPath: parseDrawingPath(note.drawingPath),
       positionX: note.positionX,
       positionY: note.positionY,
     })),

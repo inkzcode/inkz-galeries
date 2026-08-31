@@ -4,6 +4,8 @@ import { useRef, useState, useTransition } from "react";
 import { motion, type Variants } from "motion/react";
 import { uploadFinalsDirectlyBatch, type UploadFailure } from "./direct-final-upload";
 import { FinalUploadForm } from "./final-upload-form";
+import { NoteDrawingPreview } from "./note-drawing-preview";
+import type { DrawingPoint } from "@/lib/domain/photo-note";
 
 export type RetouchPhoto = {
   id: string;
@@ -14,6 +16,7 @@ export type RetouchPhoto = {
     id: string;
     message: string;
     color: string | null;
+    drawingPath: DrawingPoint[] | null;
     positionX: number | null;
     positionY: number | null;
   }[];
@@ -171,12 +174,15 @@ export function RetouchWorkspace({
           >
             <div className="relative aspect-[3/2] w-full bg-surface">
               {photo.previewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- URL de preview signée/locale, voir storage/README.md.
-                <img
-                  src={photo.previewUrl}
-                  alt={photo.filename}
-                  className="h-full w-full object-cover"
-                />
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- URL de preview signée/locale, voir storage/README.md. */}
+                  <img
+                    src={photo.previewUrl}
+                    alt={photo.filename}
+                    className="h-full w-full object-cover"
+                  />
+                  <NoteDrawingPreview notes={photo.notes} />
+                </>
               ) : (
                 <div className="flex h-full items-center justify-center text-xs text-muted">
                   Pas d&apos;aperçu

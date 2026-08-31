@@ -3863,6 +3863,58 @@ tactile réelle. Le geste de zoom lui-même — est-ce que ça se sent
 naturel sur un vrai téléphone — reste à confirmer par Enzo (ou son ami)
 en conditions réelles.
 
+## 6cinquante-septièmes. Le dessin invisible côté admin + collision de couleurs après suppression (2026-08-31)
+
+Deux retours d'Enzo dans le même message, sans lien entre eux :
+
+**1. Le dessin du client n'apparaissait jamais côté admin.** La page
+`/admin/galleries/[id]` (`RetouchWorkspace`) affichait bien le texte de
+chaque remarque et une pastille de couleur, mais ne récupérait même pas
+`drawingPath` en base (`page.tsx` ne sélectionnait que
+`message`/`color`/`positionX`/`positionY`) — le tracé que le client vient
+de dessiner sur la photo (voir §6quinvicies) n'existait donc nulle part
+côté admin, seulement côté client (`g/[slug]/drawing-overlay.tsx`).
+Corrigé : `parseDrawingPath` (validation défensive d'un JSON Prisma non
+typé, déjà écrite pour la vue client) déplacée de
+`public-gallery-service.ts` vers `lib/domain/photo-note.ts` pour être
+partagée sans dupliquer la logique ; nouveau composant
+`note-drawing-preview.tsx` — même principe SVG (`viewBox` 0..1000,
+`polyline`/`circle`) que `drawing-overlay.tsx`, mais strictement en
+lecture seule, superposé directement sur la vignette de chaque photo dans
+`RetouchWorkspace`.
+
+**2. Bug de collision de couleurs signalé par la première cliente
+d'Enzo** (via lui) : un tracé rouge puis un tracé bleu, le rouge est
+supprimé, un troisième tracé redevient bleu — deux tracés visuellement
+identiques, risque de confusion pour elle comme pour Enzo. Cause
+réelle : `colorForNoteIndex(n)` (§6quinvicies) attribuait une couleur par
+simple comptage de position (`NOTE_COLORS[n % 6]`), recalculé à chaque
+nouveau tracé à partir du nombre de remarques ACTUELLEMENT existantes —
+un nombre qui diminue après une suppression et peut donc retomber sur un
+index déjà utilisé par une remarque encore visible. Remplacé par
+`nextAvailableColor(usedColors)` (`lib/domain/note-colors.ts`) : prend la
+première couleur de la palette qui n'est PAS déjà portée par une remarque
+ou un brouillon actuellement visible sur cette photo, quel que soit
+l'historique des créations/suppressions. `colorForNoteIndex` supprimé
+(plus aucun appelant). Testé (`note-colors.test.ts`), y compris le
+scénario exact rapporté (rouge, bleu, suppression du rouge, un
+troisième tracé ne redevient jamais bleu).
+
+**Vérifié en conditions réelles** — pour le bug admin : compte admin
+temporaire créé (pas le vrai compte d'Enzo), galerie/photo/remarques de
+test créées directement en base avec un vrai tracé ET une remarque
+"point" ancien format, connexion réelle par le formulaire `/admin/login`,
+page galerie ouverte : le tracé rouge (carré) ET le point bleu
+apparaissent bien superposés sur la vignette, avec les bonnes couleurs et
+coordonnées (`viewBox` 0..1000, valeurs vérifiées exactement). Tout
+supprimé après coup (galerie, photo, remarques, compte admin temporaire).
+Pour le bug de couleurs : couvert par des tests automatisés
+reproduisant exactement le scénario rapporté plutôt qu'un test manuel
+(logique pure, sans dépendance externe).
+
+Vérifié : `tsc`/`eslint`/99 tests (5 nouveaux)/build de production
+complet, tous propres.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —

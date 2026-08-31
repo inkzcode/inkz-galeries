@@ -8,7 +8,7 @@ import { ConfirmSelectionBar } from "./confirm-selection-bar";
 import { Lightbox } from "./lightbox";
 import { DrawingOverlay, type DraftNote } from "./drawing-overlay";
 import { summarizeSelection } from "@/lib/domain/selection-summary";
-import { colorForNoteIndex } from "@/lib/domain/note-colors";
+import { nextAvailableColor } from "@/lib/domain/note-colors";
 import { WATERMARK_DISCLAIMER } from "@/lib/domain/watermark-policy";
 import type { DrawingPoint, PublicGallery } from "@/lib/services/public-gallery-service";
 import { RawDisclaimer } from "./raw-disclaimer";
@@ -101,9 +101,13 @@ export function GalleryView({
     null;
   const openPhoto = openIndex !== null ? viewablePhotos[openIndex] : null;
   const drafts = openPhoto ? (draftsByPhoto[openPhoto.id] ?? []) : [];
-  const nextColor = openPhoto
-    ? colorForNoteIndex(openPhoto.notes.length + drafts.length)
-    : colorForNoteIndex(0);
+  // Couleurs déjà utilisées par les remarques envoyées ET les brouillons
+  // encore visibles sur cette photo — pas un simple comptage (voir
+  // note-colors.ts : un comptage se recalcule après une suppression et
+  // peut retomber sur une couleur déjà prise par une remarque restante).
+  const nextColor = nextAvailableColor(
+    openPhoto ? [...openPhoto.notes.map((note) => note.color), ...drafts.map((draft) => draft.color)] : [],
+  );
   // Rejoue le halo coloré une fois le mode dessin activé (retour d'Enzo,
   // mockup du 2026-08-27) — `key`-based replay, même idée que send-burst.tsx.
   const [hintKey, setHintKey] = useState(0);
@@ -144,10 +148,10 @@ export function GalleryView({
   function handleStrokeComplete(points: DrawingPoint[]) {
     if (!openPhoto) return;
     const photoId = openPhoto.id;
-    const baseCount = openPhoto.notes.length;
+    const savedColors = openPhoto.notes.map((note) => note.color);
     setDraftsByPhoto((prev) => {
       const existing = prev[photoId] ?? [];
-      const color = colorForNoteIndex(baseCount + existing.length);
+      const color = nextAvailableColor([...savedColors, ...existing.map((draft) => draft.color)]);
       const draft: DraftNote = { id: crypto.randomUUID(), points, color, message: "" };
       return { ...prev, [photoId]: [...existing, draft] };
     });

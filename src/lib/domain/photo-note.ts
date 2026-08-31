@@ -53,6 +53,33 @@ export const PhotoNoteSchema = z.object({
 
 export type PhotoNoteInput = z.infer<typeof PhotoNoteSchema>;
 
+export type DrawingPoint = { x: number; y: number };
+
+// `drawingPath` vient de Prisma comme JSON non typé (`Prisma.JsonValue`) —
+// revalidé ici avant d'être utilisé, uniquement un tableau de points
+// {x,y} numériques dans 0..1, jamais fait confiance tel quel même si
+// c'est nous-mêmes qui l'avons écrit (défense en profondeur, coût nul).
+// Partagé entre la vue client (public-gallery-service.ts) et la vue admin
+// (galleries/[id]/page.tsx) — avant ce partage, seule la vue client
+// dessinait réellement le tracé ; l'admin ne recevait même pas ce champ
+// et ne voyait donc que le texte de la remarque, jamais le dessin
+// (retour d'Enzo, 2026-08-31 : "je vois les remarques mais pas le dessin").
+export function parseDrawingPath(value: unknown): DrawingPoint[] | null {
+  if (!Array.isArray(value)) return null;
+  const points: DrawingPoint[] = [];
+  for (const item of value) {
+    if (
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as { x?: unknown }).x === "number" &&
+      typeof (item as { y?: unknown }).y === "number"
+    ) {
+      points.push({ x: (item as { x: number }).x, y: (item as { y: number }).y });
+    }
+  }
+  return points.length >= 2 ? points : null;
+}
+
 // Édition du texte d'une remarque déjà envoyée (retour d'Enzo, 2026-08-22 :
 // "je veux pouvoir modifier ce que j'ai mis") — le tracé et la couleur
 // restent fixes, seul le message est modifiable.

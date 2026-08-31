@@ -4,13 +4,14 @@ import { getStorageAdapter } from "@/lib/storage/client";
 import type { PricingConfig } from "@/lib/domain/pricing";
 import type { WatermarkLevelValue } from "@/lib/domain/watermark-policy";
 import type { GalleryStatusValue } from "@/lib/domain/gallery-status";
+import { parseDrawingPath, type DrawingPoint } from "@/lib/domain/photo-note";
 
 // DTO explicite pour la vue client (brief §6, et guide Next.js sur la Data
 // Access Layer — voir PROJECT_CONTEXT.md §4) : ne sélectionne QUE les
 // champs sûrs à exposer. En particulier, `originalKey`, `clientEmail` et
 // tout champ interne à l'admin ne transitent jamais par cette fonction.
 
-export type DrawingPoint = { x: number; y: number };
+export type { DrawingPoint };
 
 export type PublicGalleryNote = {
   id: string;
@@ -43,26 +44,6 @@ export type PublicGallery = PricingConfig & {
   selfImageMessagesEnabled: boolean;
   photos: PublicGalleryPhoto[];
 };
-
-// `drawingPath` vient de Prisma comme JSON non typé (`Prisma.JsonValue`) —
-// revalidé ici avant d'être exposé au client : uniquement un tableau de
-// points {x,y} numériques dans 0..1, jamais fait confiance tel quel même
-// si c'est nous-mêmes qui l'avons écrit (défense en profondeur, coût nul).
-function parseDrawingPath(value: unknown): DrawingPoint[] | null {
-  if (!Array.isArray(value)) return null;
-  const points: DrawingPoint[] = [];
-  for (const item of value) {
-    if (
-      typeof item === "object" &&
-      item !== null &&
-      typeof (item as { x?: unknown }).x === "number" &&
-      typeof (item as { y?: unknown }).y === "number"
-    ) {
-      points.push({ x: (item as { x: number }).x, y: (item as { y: number }).y });
-    }
-  }
-  return points.length >= 2 ? points : null;
-}
 
 export async function getPublicGalleryBySlug(slug: string): Promise<PublicGallery | null> {
   const gallery = await prisma.gallery.findUnique({

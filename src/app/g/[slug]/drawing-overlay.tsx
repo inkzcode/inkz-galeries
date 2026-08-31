@@ -121,12 +121,17 @@ export function DrawingOverlay({
           />
         )}
       </AnimatePresence>
+      {/* `pointer-events-none` quand désactivé (retour d'Enzo/son ami,
+          2026-08-31 : "il a dessiné sans faire exprès [...] ce serait
+          mieux qu'il y ait un bouton pour commencer à dessiner") — laisse
+          passer les gestes (zoom pincé, voir lightbox.tsx) vers la photo
+          en dessous au lieu de les capter en silence. */}
       <svg
       ref={svgRef}
       viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
       preserveAspectRatio="none"
-      className={`absolute inset-0 h-full w-full ${disabled ? "" : "cursor-crosshair"}`}
-      style={{ touchAction: "none" }}
+      className={`absolute inset-0 h-full w-full ${disabled ? "pointer-events-none" : "cursor-crosshair"}`}
+      style={{ touchAction: disabled ? undefined : "none" }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

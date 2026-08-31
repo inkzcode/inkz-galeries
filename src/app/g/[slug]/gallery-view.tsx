@@ -104,14 +104,30 @@ export function GalleryView({
   const nextColor = openPhoto
     ? colorForNoteIndex(openPhoto.notes.length + drafts.length)
     : colorForNoteIndex(0);
-  // Petit signal visuel quand on clique "Annoter cette photo" dans le
-  // panneau (retour d'Enzo, mockup du 2026-08-27 : conserver ce bouton du
-  // mockup) — le tracé libre est déjà actif en permanence sur la photo
-  // (voir drawing-overlay.tsx), ce bouton ne change donc rien au
-  // fonctionnement (point 12 : "ne casse rien"), il rend juste visible où
-  // dessiner via un bref halo coloré sur la photo. `key`-based replay,
-  // même idée que send-burst.tsx.
+  // Rejoue le halo coloré une fois le mode dessin activé (retour d'Enzo,
+  // mockup du 2026-08-27) — `key`-based replay, même idée que send-burst.tsx.
   const [hintKey, setHintKey] = useState(0);
+  // Le crayon n'est plus actif par défaut (retour de l'ami d'Enzo,
+  // 2026-08-31 : "il a dessiné sans faire exprès sur sa photo [...] ce
+  // serait mieux qu'il y ait un bouton pour commencer à dessiner") — vrai
+  // bascule, activée par le bouton "Annoter cette photo" du panneau.
+  // Repasse à `false` en changeant de photo (pattern "ajuster l'état
+  // pendant le rendu", même idée que `prevPhotoId` dans
+  // photo-notes-panel.tsx — pas de useEffect ici).
+  const [drawMode, setDrawMode] = useState(false);
+  const [prevOpenIndex, setPrevOpenIndex] = useState(openIndex);
+  if (openIndex !== prevOpenIndex) {
+    setPrevOpenIndex(openIndex);
+    setDrawMode(false);
+  }
+
+  function handleToggleDrawMode() {
+    setDrawMode((current) => {
+      const next = !current;
+      if (next) setHintKey((key) => key + 1);
+      return next;
+    });
+  }
 
   // Change avec la navigation (flèches ou clic sur une image), pas avec
   // le temps (retour d'Enzo, 2026-08-25 : "je veux qu'elle change à
@@ -295,12 +311,14 @@ export function GalleryView({
         index={openIndex}
         onClose={closeLightbox}
         onNavigate={(newIndex) => openLightbox(newIndex)}
+        zoomEnabled={!drawMode}
         imageOverlay={
           openPhoto && (
             <DrawingOverlay
               notes={openPhoto.notes}
               draftNotes={drafts}
               activeColor={nextColor}
+              disabled={!drawMode}
               onStrokeComplete={handleStrokeComplete}
               hintKey={hintKey}
             />
@@ -330,7 +348,8 @@ export function GalleryView({
               selected={openPhoto.selected}
               locked={locked}
               onToggleSelected={() => handleToggle(openPhoto.id)}
-              onAnnotateHint={() => setHintKey((key) => key + 1)}
+              drawMode={drawMode}
+              onToggleDrawMode={handleToggleDrawMode}
             />
           )
         }

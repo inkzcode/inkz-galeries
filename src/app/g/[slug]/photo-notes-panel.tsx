@@ -55,7 +55,8 @@ export function PhotoNotesPanel({
   selected,
   locked,
   onToggleSelected,
-  onAnnotateHint,
+  drawMode,
+  onToggleDrawMode,
 }: {
   gallerySlug: string;
   photoId: string;
@@ -74,10 +75,13 @@ export function PhotoNotesPanel({
   locked: boolean;
   onToggleSelected: () => void;
   /** Bouton "Annoter cette photo" du mockup (retour d'Enzo, 2026-08-27) —
-   * le tracé libre est déjà actif en permanence sur la photo (voir
-   * drawing-overlay.tsx) ; ce bouton ne fait qu'attirer l'œil vers elle
-   * via un bref halo coloré, sans changer la logique existante. */
-  onAnnotateHint?: () => void;
+   * devenu une vraie bascule (retour de l'ami d'Enzo, 2026-08-31 : "ce
+   * serait mieux qu'il y ait un bouton pour commencer à dessiner plutôt
+   * que de base le crayon soit mis en route") : tant que `drawMode` est
+   * faux, le tracé (drawing-overlay.tsx) est désactivé et les gestes
+   * passent au zoom pincé (lightbox.tsx) à la place. */
+  drawMode: boolean;
+  onToggleDrawMode: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
@@ -214,10 +218,15 @@ export function PhotoNotesPanel({
           </p>
           <motion.button
             type="button"
-            onClick={onAnnotateHint}
+            onClick={onToggleDrawMode}
+            aria-pressed={drawMode}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent-soft bg-accent-tint px-4 py-2 text-sm font-medium text-accent shadow-sm transition-colors hover:bg-accent-soft"
+            className={`mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium shadow-sm transition-colors ${
+              drawMode
+                ? "border-accent bg-accent text-paper hover:opacity-90"
+                : "border-accent-soft bg-accent-tint text-accent hover:bg-accent-soft"
+            }`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
@@ -228,8 +237,14 @@ export function PhotoNotesPanel({
                 strokeLinejoin="round"
               />
             </svg>
-            Annoter cette photo
+            {drawMode ? "Terminer l'annotation" : "Annoter cette photo"}
           </motion.button>
+          {drawMode && (
+            <p className="mt-2 text-[11px] text-muted">
+              Entourez la zone d&apos;un trait sur la photo. Le zoom est
+              désactivé pendant l&apos;annotation.
+            </p>
+          )}
         </div>
 
         {isEmpty && (

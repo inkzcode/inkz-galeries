@@ -3786,6 +3786,83 @@ transitions de survol) reste à confirmer par Enzo en conditions réelles
 Vérifié : `tsc`/`eslint`/94 tests/build de production complet, tous
 propres.
 
+## 6cinquante-sixièmes. Logo détouré + le crayon devient une vraie bascule + zoom pincé (2026-08-31)
+
+Retour d'un ami d'Enzo testant sur téléphone, transmis verbatim : "le logo
+inkz n'est pas détouré donc ça fait un carré blanc [...] il a dessiné
+sans faire exprès sur sa photo et que ce serait mieux qu'il y ait un
+bouton pour commencer à dessiner plutôt que de base le crayon soit mis en
+route [...] ça serait cool qu'on puisse zoomer sur les photos aussi [...]
+donc le bouton pour commencer à dessiner permettrait de zoomer avec les
+deux doigts sur téléphone sans dessiner un trait sans faire exprès."
+Trois demandes liées entre elles, traitées ensemble.
+
+**Logo détouré** — `public/brand/inkz-logo.png` et `src/app/icon.png`
+avaient un fond blanc opaque baké dans les pixels (`hasAlpha: false`, pas
+juste une question de CSS). Script `sharp` à usage unique : lecture des
+pixels bruts (`.raw().ensureAlpha()`), chaque pixel dont R/G/B ≥ 245
+passe à alpha 0, réassemblage en PNG. `inkz-logo.png` est maintenant
+réellement transparent. `icon.png` (favicon/icône PWA) a plutôt reçu un
+fond recoloré en or de marque (`#f0dd95` via `.flatten()`) plutôt que la
+transparence : iOS impose de toute façon un fond opaque derrière une
+icône d'écran d'accueil, donc la transparence seule n'aurait rien réglé
+pour ce cas précis — un fond coloré se lit comme un choix de marque
+plutôt que comme un bug.
+
+**Le crayon n'est plus actif par défaut** — jusqu'ici,
+`drawing-overlay.tsx` captait tous les gestes sur la photo en
+permanence ; le bouton "Annoter cette photo" du panneau ne faisait
+qu'attirer l'œil (halo coloré), sans rien activer. Devenu une vraie
+bascule (`gallery-view.tsx` : état `drawMode`, réinitialisé à chaque
+changement de photo) : tant qu'elle n'est pas activée, la surface de
+dessin passe en `pointer-events-none` et laisse les gestes retomber sur
+la photo en dessous. Le bouton change de libellé/couleur selon l'état
+("Annoter cette photo" → "Terminer l'annotation") et un petit texte
+d'aide apparaît pendant l'annotation.
+
+**Zoom pincé dans la visionneuse** (`lightbox.tsx`) — nouveau, suit les
+mêmes évènements Pointer que `drawing-overlay.tsx` (`touch-action: none`,
+capture de pointeur), sur un conteneur PARTAGÉ avec la surface de
+dessin : deux doigts pincent/zooment (`scale` borné entre 1 et 4), un
+doigt fait glisser une fois zoomé, double-clic/double-tap réinitialise.
+Nouvelle prop `zoomEnabled` (vraie par défaut, désactivée par
+`gallery-view.tsx` pendant `drawMode`) — les deux gestes (dessiner,
+zoomer) ne se disputent jamais le même évènement tactile : c'est le
+bouton "Annoter cette photo" qui bascule de l'un à l'autre, exactement
+la demande d'Enzo. Le zoom se réinitialise automatiquement en changeant
+de photo ou en repassant en mode dessin (la surface de dessin suppose une
+photo à sa taille normale — un zoom encore actif désynchroniserait le
+tracé de ce qu'un client voit réellement).
+
+**Vérifié en conditions réelles** — galerie/photo/code d'accès de test
+créés directement en base (script à usage unique, supprimé après), vrai
+parcours client (saisie du PIN sur `/g`, ouverture de la photo). Confirmé
+via inspection directe des props/hooks React (pas juste visuellement,
+voir limite ci-dessous) :
+- Le crayon est bien désactivé par défaut (`pointer-events-none` sur la
+  surface de dessin).
+- Le bouton bascule correctement le libellé et l'état.
+- Pendant l'annotation, un pincement à deux doigts est bien ignoré par
+  le zoom (`pinchRef` reste `null` — vérifié en lisant l'état interne du
+  composant, pas seulement le rendu visuel).
+- Une fois l'annotation terminée, le même pincement met bien à jour
+  l'état de zoom interne.
+
+Donnée de test entièrement supprimée après coup (galerie, photo, code
+d'accès). Vérifié aussi : `tsc`/`eslint`/94 tests/build de production
+complet, tous propres.
+
+**Limite d'environnement, déjà documentée mais qui s'applique de façon
+plus directe ici** — le rendu ANIMÉ du zoom (fluidité du pincement, du
+glissement) n'a pas pu être observé visuellement dans cet environnement
+de test (`document.hidden` bloque `requestAnimationFrame`, dont
+Framer Motion dépend pour appliquer la transformation à l'écran) : la
+vérification ci-dessus porte sur la LOGIQUE (quel geste déclenche quoi),
+confirmée directement au niveau de l'état React, pas sur la sensation
+tactile réelle. Le geste de zoom lui-même — est-ce que ça se sent
+naturel sur un vrai téléphone — reste à confirmer par Enzo (ou son ami)
+en conditions réelles.
+
 ## 7. Décisions encore ouvertes
 
 Ces points nécessiteront l'avis du photographe avant d'être implémentés —
